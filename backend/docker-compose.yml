@@ -1,0 +1,40 @@
+version: "3.7"
+
+services:
+  backend:
+    image: node:10
+    restart: unless-stopped
+    volumes:
+      - ./src:/server/src
+      - ./test:/server/test
+      - ./node_modules:/server/node_modules
+      - ./package.json:/server/package.json
+      - ./nest-cli.json:/server/nest-cli.json
+      - ./tsconfig.json:/server/tsconfig.json
+      - ./tsconfig.build.json:/server/tsconfig.build.json
+    command: sh -c 'cd /server && yarn && yarn start:dev'
+    expose:
+      - 3000
+    depends_on:
+      - db
+
+  nginx:
+    container_name: chat-nginx
+    image: nginx:latest
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/sites-enabled/server.conf:/etc/nginx/sites-enabled/server.conf
+    depends_on:
+      - backend
+    ports:
+      - 80:80
+  
+  db:
+    container_name: chat-db
+    image: mongo:4
+    restart: unless-stopped
+    volumes: 
+      - ./volumes/mongodb:/data/db
+      - ./volumes/mongodb_config:/data/configdb
+    ports:
+      - 27017:27017
