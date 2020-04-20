@@ -1,14 +1,15 @@
 import React from 'react';
-import { Button, Menu, Input, Form, message } from 'antd';
+import { Button, Menu, Input, Dropdown, Tag } from 'antd';
 import JoinGroup from './components/JoinGroup';
 import Username from "./components/Username";
-import { SendOutlined } from '@ant-design/icons';
+import { SendOutlined, EllipsisOutlined} from '@ant-design/icons';
 
 class App extends React.Component {
   state = {
     showJoinGroup: false,
     showUsername: false,
-    messageBox: ""
+    messageBox: "",
+    currentChatId: null
   }
   componentDidMount() {
     if (!localStorage.getItem('username')) {
@@ -24,6 +25,9 @@ class App extends React.Component {
       this.setState({ messageBox: ""});
     }
   }
+  leaveCurrentGroup = () => {
+    // Leave Group
+  }
   render() {
     const { showUsername, showJoinGroup, messageBox } = this.state;
     return (
@@ -37,11 +41,30 @@ class App extends React.Component {
           <Menu
             className="main-menu"
             style={{ width: 256 }}
-            defaultSelectedKeys={['1']}
-            defaultOpenKeys={['sub1']}
             mode="inline"
           >
-            <Menu.Item key="1" className="ma-0">Group 1</Menu.Item>
+            <Menu.Item 
+              key="1" 
+              className="ma-0 d-flex justify-space-between align-center"
+              onClick={() => this.setState({ currentChatId: 1 })}
+            >
+              <div className="d-flex align-center">
+                <span>Group 1</span>
+                <Tag color="#f5222d" className="ml-2 rounded-max">10</Tag>
+              </div>
+              <Dropdown placement="bottomRight" overlay={() => (
+                <Menu style={{ marginTop: -8 }}>
+                  <Menu.Item 
+                    className="t-color-error"
+                    onClick={() => this.leaveCurrentGroup()}
+                  >Leave Group</Menu.Item>
+                </Menu>
+              )} trigger={['click']}>
+                <Button type="link" className="pa-0">
+                  <EllipsisOutlined />
+                </Button>
+              </Dropdown>
+            </Menu.Item>
             <div 
               className="bottom-bar full-width pa-2"
               style={{ 
