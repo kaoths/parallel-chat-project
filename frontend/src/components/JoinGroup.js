@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Form, Input, Modal } from 'antd';
 
 const JoinGroup = (props) => {
-  const [formValue, setFormValue] = useState({groupId: ""});
   const onFinish = values => {
-    setFormValue(values);
     // API Here
     console.log(values);
   };

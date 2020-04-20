@@ -20,7 +20,7 @@ nav.main {
     top: 0;
     left: 0;
     right: 0;
-    z-index: 9999;
+    z-index: 900;
     .content {
         align-items: center;
         box-sizing: border-box;
@@ -44,9 +44,75 @@ nav.main {
     bottom: 0;
     background: white;
     border-top: 1px solid #f0f0f0;
-    z-index: 999;
+    z-index: 500;
 }
 
 main {
     padding-left: 256px;
+}
+
+.speech-bubble-wrapper {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    .speech-name {
+        color: @gray-7;
+        font-size: 10px;
+        margin-bottom: 4px;
+        width: 100%;
+    }
+    &.mine {
+        justify-content: flex-end;
+        .speech-name {
+            text-align: right;
+        }
+    }
+    &.theirs {
+        justify-content: flex-start;
+        .speech-name {
+            text-align: left;
+        }
+    }
+}
+.speech-bubble {
+    padding: 8px;
+	position: relative;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    max-width: 60%;
+    &.mine {
+        background: @primary-color;
+        color: white;
+    }
+    &.theirs {
+        background: @gray-4;
+    }
+}
+
+.speech-bubble:after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	width: 0;
+	height: 0;
+    margin-bottom: -8px;
+}
+.speech-bubble.mine {
+    &:after {
+        border: 8px solid transparent;
+        border-right-color: @primary-color;
+        border-top: 0;
+        border-left: 0;
+        right: 24px;
+    }
+}
+.speech-bubble.theirs {
+    &:after {
+        margin-left: -20%;
+        border: 8px solid transparent;
+        border-top-color: @gray-4;
+        border-bottom: 0;
+        border-left: 0;
+        left: 24px
+    }
 }

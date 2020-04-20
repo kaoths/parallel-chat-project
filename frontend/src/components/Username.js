@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Form, Input, Modal } from 'antd';
 
 const Username = (props) => {
-  const [formValue, setFormValue] = useState({username: ""});
   const onFinish = values => {
-    setFormValue(values);
     // API Here
     if (values.username && values.username !== "") {
       localStorage.setItem("username", values.username);

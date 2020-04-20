@@ -62,7 +62,23 @@ class App extends React.Component {
           </Menu>
           <main>
             <div className="pa-2">
-              <p>Chat Content</p>
+              <div className="speech-bubble-wrapper theirs">
+                <div className="speech-name">Someone</div>
+                <div className="speech-bubble theirs">
+                  Hello
+                </div>
+              </div>
+              <div className="speech-bubble-wrapper mine">
+                <div className="speech-name">Me</div>
+                <div className="speech-bubble mine">
+                  Hello there!
+                </div>
+              </div>
+              <div className="speech-bubble-wrapper mine">
+                <div className="speech-bubble mine">
+                  Lorem ipsum dolor sit amet
+                </div>
+              </div>
             </div>
             <div 
               className="bottom-bar full-width pa-2"
