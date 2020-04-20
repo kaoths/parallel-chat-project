@@ -35,6 +35,12 @@ class App extends React.Component {
         <nav className="main">
           <div className="content">
             <h4 className="mb-0">Miniproject ภาคปลาย 2562: Simple LINE-like app (15%)</h4>
+            <Button 
+              onClick={() => this.setState({ showUsername: true })}
+              style={{ position: 'absolute', right: 8 }}
+            >
+              Change Username
+            </Button>
           </div>
         </nav>
         <div style={{ paddingTop: '48px' }}>

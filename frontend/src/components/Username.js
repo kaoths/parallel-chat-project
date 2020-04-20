@@ -19,12 +19,13 @@ const Username = (props) => {
       visible={visible}
       onCancel={onCancel}
       okButtonProps={{form:'username-form', key: 'submit', htmlType: 'submit'}}
-      okText="Join"
+      okText="Apply"
     >
       <Form
         name="basic"
         onFinish={onFinish}
         id="username-form"
+        initialValues={{ username: localStorage.getItem("username") ? localStorage.getItem("username") : "" }}
       >
         <h2>Enter a Username</h2>
         <Form.Item
