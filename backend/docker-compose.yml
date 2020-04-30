@@ -18,42 +18,40 @@ services:
     command: sh -c 'cd /server && yarn && yarn start:dev'
     expose:
       - 3000
-    ports:
-      - 80:3000
     depends_on:
       - db
 
-  # backend-backup:
-  #   container_name: chat-backend-backup
-  #   image: node:10
-  #   restart: unless-stopped
-  #   volumes:
-  #     - ./src:/server/src
-  #     - ./test:/server/test
-  #     - ./node_modules:/server/node_modules
-  #     - ./package.json:/server/package.json
-  #     - ./nest-cli.json:/server/nest-cli.json
-  #     - ./tsconfig.json:/server/tsconfig.json
-  #     - ./tsconfig.build.json:/server/tsconfig.build.json
-  #   environment:
-  #     MONGO_URL: mongodb://db:27017
-  #   command: sh -c 'cd /server && yarn && yarn start:dev'
-  #   expose:
-  #     - 3000
-  #   depends_on:
-  #     - backend
+  backend-backup:
+    container_name: chat-backend-backup
+    image: node:10
+    restart: unless-stopped
+    volumes:
+      - ./src:/server/src
+      - ./test:/server/test
+      - ./node_modules:/server/node_modules
+      - ./package.json:/server/package.json
+      - ./nest-cli.json:/server/nest-cli.json
+      - ./tsconfig.json:/server/tsconfig.json
+      - ./tsconfig.build.json:/server/tsconfig.build.json
+    environment:
+      MONGO_URL: mongodb://db:27017
+    command: sh -c 'cd /server && yarn && yarn start:dev'
+    expose:
+      - 3000
+    depends_on:
+      - backend
 
-  # nginx:
-  #   container_name: chat-nginx
-  #   image: nginx:latest
-  #   volumes:
-  #     - ./config/nginx.conf:/etc/nginx/nginx.conf
-  #     - ./config/sites-enabled/server.conf:/etc/nginx/sites-enabled/server.conf
-  #   depends_on:
-  #     - backend
-  #     - backend-backup
-  #   ports:
-  #     - 80:80
+  nginx:
+    container_name: chat-nginx
+    image: nginx:latest
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf
+      - ./config/sites-enabled/server.conf:/etc/nginx/sites-enabled/server.conf
+    depends_on:
+      - backend
+      - backend-backup
+    ports:
+      - 80:80
   
   db:
     container_name: chat-db
