@@ -19,14 +19,24 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage('joinRoom')
   handleJoinRoom(@ConnectedSocket() client: Socket, @MessageBody() roomName: string): void {
+    const room = this.getClientCurrentRoom(client);
+    if (room) {
+      return //client is already in another room --> leave first
+    }
     client.join(roomName);
     this.server.to(client.id).emit('joinedRoom', roomName);
   }
 
   @SubscribeMessage('toRoom')
   handleMessageToRoom(@ConnectedSocket() client: Socket, @MessageBody() message: string) {
-    const room = Object.keys(client.rooms).filter(room => room !== client.id);
-    this.server.to(room[0]).emit('toClient', message);
+    const room = this.getClientCurrentRoom(client);
+    if (room) this.server.to(room).emit('toClient', message);
+  }
+
+  @SubscribeMessage('leaveRoom')
+  handleLeaveRoom(@ConnectedSocket() client: Socket) {
+    const room = this.getClientCurrentRoom(client);
+    if (room) client.leave(room);
   }
 
   afterInit(server: Server) {
@@ -39,5 +49,9 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   handleConnection(client: Socket, ...args): any {
     console.log(`${client.id} connected`, args);
+  }
+
+  getClientCurrentRoom(client: Socket){
+    return Object.keys(client.rooms).filter(room => room !== client.id)[0];
   }
 }
