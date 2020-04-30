@@ -4,6 +4,7 @@ import io from "socket.io-client";
 import CreateRoom from './components/CreateRoom';
 import Username from "./components/Username";
 import { SendOutlined, EllipsisOutlined} from '@ant-design/icons';
+import moment from "moment";
 
 const url = process.env.REACT_APP_API_URL
 const socket = io(url);
@@ -16,7 +17,10 @@ class App extends React.Component {
     currentRoomName: null,
     messages: [],
     username: "",
-    groups: ["RoomName"]
+    groups: [{
+      roomName: "Room Name",
+      _id: "123"
+    }]
   }
   componentDidMount() {
     if (!localStorage.getItem('username')) {
@@ -28,15 +32,17 @@ class App extends React.Component {
       socket.on('joinedRoom', (data) => {
         // Set Room and Recieve Messages
         this.setState({ 
-          currentRoomName: data.roomName,
-          messages: data.messages 
+          currentRoomName: data.roomInfo._id,
+          messages: data.roomInfo.messages ? data.roomInfo.messages : [],
+          showCreateRoom: false
         })
       })
       socket.on('toClient', (data) => {
         // Recieve Messages
-        const m = [...this.state.messages];
+        let m = [...this.state.messages];
+        m.push(data)
         this.setState({
-          messages: m.push(data.message)
+          messages: m
         })
       })
     }
@@ -59,7 +65,6 @@ class App extends React.Component {
       username: this.state.username,
       roomName
     });
-    this.setState({ currentRoomName: roomName })
   }
   leaveCurrentRoom = () => {
     // Leave Room
@@ -67,7 +72,10 @@ class App extends React.Component {
     socket.emit('leaveRoom', username)
   }
   resetCurrentRoomName = () => {
-    this.setState({ currentRoomName: null });
+    this.setState({ 
+      currentRoomName: null,
+      messages: [] 
+    });
   }
   componentWillUnmount = () => {
     // Temporarily Exit Room
@@ -75,7 +83,14 @@ class App extends React.Component {
     socket.emit('exitRoom', username)
   }
   render() {
-    const { showUsername, showCreateRoom, messageBox, username, messages, groups } = this.state;
+    const { showUsername, 
+      showCreateRoom,
+      messageBox, 
+      username, 
+      messages, 
+      groups,
+      currentRoomName
+    } = this.state;
     return (
       <div>
         <nav className="main">
@@ -99,10 +114,10 @@ class App extends React.Component {
               <Menu.Item 
                 key={'group' + i} 
                 className="ma-0 d-flex justify-space-between align-center"
-                onClick={() => this.changeRoom(e)}
+                onClick={() => this.changeRoom(e.roomName)}
               >
                 <div className="d-flex align-center">
-                  <span>{e}</span>
+                  <span>{e.roomName}</span>
                   <Tag color="#f5222d" className="ml-2 rounded-max">10</Tag>
                 </div>
                 <Dropdown placement="bottomRight" overlay={() => (
@@ -140,9 +155,12 @@ class App extends React.Component {
           <main>
             <div className="pa-2">
               { messages.map((e,i) => (
-                <div className={`speech-bubble-wrapper ${e.sender === username ? 'mine' : 'theirs'}`}>
-                  <div className="speech-name">{e.sender}</div>
-                  <div className={`speech-bubble ${e.sender === username ? 'mine' : 'theirs'}`}>
+                <div 
+                  className={`speech-bubble-wrapper ${e.username === username ? 'mine' : 'theirs'}`}
+                  key={i + e.timestamp}
+                >
+                  <div className="speech-name">{e.username}, {moment(e.timestamp).format("HH:MM DD/MM/YYYY")}</div>
+                  <div className={`speech-bubble ${e.username === username ? 'mine' : 'theirs'}`}>
                     {e.message}
                   </div>
                 </div>
@@ -165,8 +183,9 @@ class App extends React.Component {
                     value={messageBox}
                     className="mr-2"
                     onChange={(e) => this.setState({ messageBox: e.target.value })}
+                    disabled={!currentRoomName}
                   />
-                  <Button type="primary" htmlType="submit">
+                  <Button type="primary" htmlType="submit" disabled={!currentRoomName}>
                     <SendOutlined />
                   </Button>
                 </div>

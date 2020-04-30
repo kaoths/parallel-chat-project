@@ -8,16 +8,15 @@ class CreateRoom extends React.Component {
   onFinish = values => {
     const { socket } = this.props;
     const username = localStorage.getItem("username")
-
     if (this.state.mode === 'create') {
       socket.emit('addRoom',{
         username,
-        roomName: values.groupId
+        roomName: values.roomName
       });
     } else {
       socket.emit('joinRoom',{
         username,
-        roomName: values.groupId
+        roomName: values.roomName
       })
     }
   };
@@ -51,8 +50,8 @@ class CreateRoom extends React.Component {
           </Form.Item>
           <h2>{ mode === 'create' ? 'Create a Room' : 'Join an Existing Room'}</h2>
           <Form.Item
-            label="Room Id"
-            name="groupId"
+            label="Room Name"
+            name="roomName"
             className="mb-2"
             rules={[{ required: true, message: 'This field is required' }]}
           >
