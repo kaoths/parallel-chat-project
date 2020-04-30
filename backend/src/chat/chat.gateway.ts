@@ -1,24 +1,37 @@
 import {
-  ConnectedSocket, MessageBody,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  OnGatewayInit,
+  ConnectedSocket,
+  MessageBody,
   SubscribeMessage,
-  WebSocketGateway, WebSocketServer,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
+import { ChatService } from './chat.service';
 
 @WebSocketGateway()
-export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class ChatGateway {
   @WebSocketServer() server: Server;
 
-  @SubscribeMessage('toServer')
-  handleMessage(@ConnectedSocket() client: Socket, @MessageBody() payload: any): void {
-    this.server.to(client.id).emit('toClient', payload); //echo checker
+  constructor(private readonly service: ChatService) {}
+
+  @SubscribeMessage('addRoom')
+  handleAddRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() roomName: string,
+  ) {
+    const room = this.getClientCurrentRoom(client);
+    if (room) {
+      this.service.createChat(roomName);
+      client.join(roomName);
+      this.server.to(client.id).emit('joinedRoom', roomName);
+    }
   }
 
   @SubscribeMessage('joinRoom')
-  handleJoinRoom(@ConnectedSocket() client: Socket, @MessageBody() { username, roomName}): void {
+  handleJoinRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() roomName: string,
+  ): void {
     const room = this.getClientCurrentRoom(client);
     if (room) {
       client.leave(room);
@@ -28,31 +41,35 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   }
 
   @SubscribeMessage('toRoom')
-  handleMessageToRoom(@ConnectedSocket() client: Socket, @MessageBody() { username, message }) {
+  handleMessageToRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() message: string,
+  ) {
     const room = this.getClientCurrentRoom(client);
-    if (room) this.server.to(room).emit('toClient', { username, message });
+    if (room) {
+      this.service.addMessage(room, { sender: client.id,  message });
+      this.server.to(room).emit('toClient', message);
+    }
   }
 
   @SubscribeMessage('leaveRoom')
   handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() username) {
     const room = this.getClientCurrentRoom(client);
-    if (room) client.leave(room);
-    this.server.to(room).emit('leftRoom', username)
+    if (room) {
+      client.leave(room);
+    }
   }
 
-  afterInit(server: Server) {
-    console.log('init', server);
+  @SubscribeMessage('exitRoom')
+  handleExitRoom(@ConnectedSocket() client: Socket) {
+    const room = this.getClientCurrentRoom(client);
+    if (room) {
+      this.service.removeMember(room, client.id);
+      client.leave(room);
+    }
   }
 
-  handleDisconnect(client: Socket): any {
-    console.log(`${client.id} disconnected`);
-  }
-
-  handleConnection(client: Socket, ...args): any {
-    console.log(`${client.id} connected`, args);
-  }
-
-  getClientCurrentRoom(client: Socket){
+  private getClientCurrentRoom(client: Socket) {
     return Object.keys(client.rooms).filter(room => room !== client.id)[0];
   }
 }

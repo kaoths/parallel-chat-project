@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ChatModule } from './chat/chat.module';
+import { TypegooseModule } from 'nestjs-typegoose';
 
 @Module({
-    imports: [ChatModule],
-    controllers: [AppController],
-    providers: [AppService],
+  imports: [
+    TypegooseModule.forRoot(process.env.MONGO_URL, {
+      useNewUrlParser: true,
+      useFindAndModify: false,
+      useUnifiedTopology: true,
+    }),
+    ChatModule,
+  ],
 })
 export class AppModule {}
