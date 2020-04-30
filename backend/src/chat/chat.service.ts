@@ -44,4 +44,13 @@ export class ChatService {
       },
     );
   }
+
+  getRoomInformation(roomName: string) {
+    return this.model.findOne({ roomName })
+  }
+
+  async getRoomMessages(roomName: string) {
+    const room = await this.getRoomInformation(roomName);
+    return room.messages;
+  }
 }
