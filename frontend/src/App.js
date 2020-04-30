@@ -1,9 +1,11 @@
 import React from 'react';
-import { Button, Menu, Input, Dropdown, Tag } from 'antd';
+import { Button, Input } from 'antd';
 import io from "socket.io-client";
 import CreateRoom from './components/CreateRoom';
 import Username from "./components/Username";
-import { SendOutlined, EllipsisOutlined} from '@ant-design/icons';
+import Nav from "./components/Nav";
+import RoomSelect from "./components/RoomSelect";
+import { SendOutlined} from '@ant-design/icons';
 import moment from "moment";
 
 const url = process.env.REACT_APP_API_URL
@@ -17,16 +19,27 @@ class App extends React.Component {
     currentRoomName: null,
     messages: [],
     username: "",
-    groups: [{
+    rooms: [{
       roomName: "Room Name",
       _id: "123"
-    }]
+    },{
+      roomName: "Room 2",
+      _id: "234"
+    }],
+    isAuth: false,
+    token: null
   }
   componentDidMount() {
-    if (!localStorage.getItem('username')) {
-      this.setState({ showUsername: true })
+    if (!localStorage.getItem('token') || !localStorage.getItem('username')) {
+      this.setState({ 
+        showUsername: true,
+      })
     } else {
-      this.setState({ username: localStorage.getItem('username') });
+      this.setState({ 
+        username: localStorage.getItem('username'),
+        token: localStorage.getItem('token'),
+        isAuth: true
+      });
     }
     if (socket !== null) {
       socket.on('joinedRoom', (data) => {
@@ -39,8 +52,11 @@ class App extends React.Component {
       })
       socket.on('toClient', (data) => {
         // Recieve Messages
+        let d = {...data}
+        d.sender = data.username;
+        delete d.username;
         let m = [...this.state.messages];
-        m.push(data)
+        m.push(d)
         this.setState({
           messages: m
         })
@@ -60,22 +76,37 @@ class App extends React.Component {
     }
   }
   changeRoom = (roomName) => {
-    this.leaveCurrentRoom();
-    socket.emit('joinRoom', {
-      username: this.state.username,
-      roomName
-    });
+    console.log(roomName);
+    // this.leaveCurrentRoom();
+    // socket.emit('joinRoom', {
+    //   username: this.state.username,
+    //   roomName
+    // });
   }
   leaveCurrentRoom = () => {
     // Leave Room
-    const { username } = this.state;
-    socket.emit('leaveRoom', username)
+    socket.emit('leaveRoom', this.state.username);
+    this.setState({ 
+      currentRoomName: null,
+      messages: [] 
+    });
   }
   resetCurrentRoomName = () => {
     this.setState({ 
       currentRoomName: null,
       messages: [] 
     });
+  }
+  logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    this.resetCurrentRoomName();
+    this.setState({
+      username: "",
+      token: null,
+      isAuth: false,
+      showUsername: true
+    })
   }
   componentWillUnmount = () => {
     // Temporarily Exit Room
@@ -88,83 +119,40 @@ class App extends React.Component {
       messageBox, 
       username, 
       messages, 
-      groups,
-      currentRoomName
+      rooms,
+      currentRoomName,
+      isAuth
     } = this.state;
     return (
       <div>
-        <nav className="main">
-          <div className="content">
-            <h4 className="mb-0">Miniproject ภาคปลาย 2562: Simple LINE-like app (15%)</h4>
-            <Button 
-              onClick={() => this.setState({ showUsername: true })}
-              style={{ position: 'absolute', right: 8 }}
-            >
-              Change Username
-            </Button>
-          </div>
-        </nav>
+        <Nav 
+          isAuth={isAuth} 
+          logout={() => this.logout()} 
+          onButtonClick={() => this.setState({ showUsername: true })}
+        />
         <div style={{ paddingTop: '48px' }}>
-          <Menu
-            className="main-menu"
-            style={{ width: 256 }}
-            mode="inline"
-          >
-            {groups.map((e,i) => (
-              <Menu.Item 
-                key={'group' + i} 
-                className="ma-0 d-flex justify-space-between align-center"
-                onClick={() => this.changeRoom(e.roomName)}
-              >
-                <div className="d-flex align-center">
-                  <span>{e.roomName}</span>
-                  <Tag color="#f5222d" className="ml-2 rounded-max">10</Tag>
-                </div>
-                <Dropdown placement="bottomRight" overlay={() => (
-                  <Menu style={{ marginTop: -8 }}>
-                    <Menu.Item 
-                      className="t-color-error"
-                      onClick={() => this.leaveCurrentRoom()}
-                    >Leave Room</Menu.Item>
-                  </Menu>
-                )} trigger={['click']}>
-                  <Button type="link" className="pa-0">
-                    <EllipsisOutlined />
-                  </Button>
-                </Dropdown>
-              </Menu.Item>
-            ))}
-            <div 
-              className="bottom-bar full-width pa-2"
-              style={{ 
-                width: 256,
-                borderRight: '1px solid #f0f0f0',
-                left: 0
-              }}
-            >
-              <Button 
-                type="primary" 
-                onClick={() => this.setState({ showCreateRoom: true })}
-                className="full-width"
-                style={{ boxSizing: 'border-box' }}
-              >
-                Create or Join a Room
-              </Button>
-            </div>
-          </Menu>
+          <RoomSelect
+            rooms={rooms}
+            leaveRoom={() => this.leaveCurrentRoom()}
+            onChange={this.changeRoom}
+            onCreateClick={() => this.setState({ showCreateRoom: true })}
+            isAuth={isAuth}
+          />
           <main>
-            <div className="pa-2">
-              { messages.map((e,i) => (
-                <div 
-                  className={`speech-bubble-wrapper ${e.username === username ? 'mine' : 'theirs'}`}
-                  key={i + e.timestamp}
-                >
-                  <div className="speech-name">{e.username}, {moment(e.timestamp).format("HH:MM DD/MM/YYYY")}</div>
-                  <div className={`speech-bubble ${e.username === username ? 'mine' : 'theirs'}`}>
-                    {e.message}
+            <div className="messages-wrapper">
+              <div className="pa-2">
+                { messages.map((e,i) => (
+                  <div 
+                    className={`speech-bubble-wrapper ${e.sender === username ? 'mine' : 'theirs'}`}
+                    key={i + e.timestamp}
+                  >
+                    <div className="speech-name">{e.sender}, {moment(e.timestamp).format("HH:MM DD/MM/YYYY")}</div>
+                    <div className={`speech-bubble ${e.sender === username ? 'mine' : 'theirs'}`}>
+                      {e.message}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
             <div 
               className="bottom-bar full-width pa-2"

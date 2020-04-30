@@ -3,7 +3,7 @@ import { Form, Input, Modal, Select } from 'antd';
 
 class CreateRoom extends React.Component {
   state = {
-    mode: 'create'
+    mode: 'join'
   }
   onFinish = values => {
     const { socket } = this.props;
@@ -43,9 +43,9 @@ class CreateRoom extends React.Component {
           id="create-group-form"
         >
           <Form.Item className="mb-3">
-            <Select defaultValue="create" style={{ width: 120 }} onChange={this.handleChange}>
-              <Select.Option value="create">Create</Select.Option>
+            <Select defaultValue="join" style={{ width: 120 }} onChange={this.handleChange}>
               <Select.Option value="join">Join</Select.Option>
+              <Select.Option value="create">Create</Select.Option>
             </Select>
           </Form.Item>
           <h2>{ mode === 'create' ? 'Create a Room' : 'Join an Existing Room'}</h2>
