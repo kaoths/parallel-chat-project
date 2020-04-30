@@ -1,6 +1,9 @@
 import { Module } from '@nestjs/common';
 import { ChatModule } from './chat/chat.module';
 import { TypegooseModule } from 'nestjs-typegoose';
+import { AuthModule } from './auth/auth.module';
+import { ConfigModule } from './config/config.module';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -10,6 +13,9 @@ import { TypegooseModule } from 'nestjs-typegoose';
       useUnifiedTopology: true,
     }),
     ChatModule,
+    AuthModule,
+    ConfigModule,
+    UserModule,
   ],
 })
 export class AppModule {}
