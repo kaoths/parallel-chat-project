@@ -22,6 +22,7 @@ export class ChatGateway {
     const room = this.getClientCurrentRoom(client);
     if (room) client.leave(room);
     const roomInfo = await this.service.createChat(roomName);
+    await this.service.addMember(roomName, username);
     client.join(roomName);
     this.server.to(client.id).emit('joinedRoom', { username, roomInfo });
   }
@@ -34,19 +35,20 @@ export class ChatGateway {
     const room = this.getClientCurrentRoom(client);
     if (room) client.leave(room);
     const roomInfo = await this.service.getRoomInformation(roomName);
+    if (!roomInfo.members.includes(username)) await this.service.addMember(roomName, username)
     client.join(roomName);
     this.server.to(room).emit('joinedRoom', { username, roomInfo })
   }
 
   @SubscribeMessage('toRoom')
-  chandleMessageToRoom(
+  async chandleMessageToRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() { username, message },
   ) {
     const room = this.getClientCurrentRoom(client);
     if (room) {
       const timestamp = new Date();
-      this.service.addMessage(room, { sender: client.id,  message, timestamp });
+      await this.service.addMessage(room, { sender: username, message, timestamp });
       this.server.to(room).emit('toClient', { username, message, timestamp });
     }
   }
@@ -64,13 +66,13 @@ export class ChatGateway {
   }
 
   @SubscribeMessage('exitRoom')
-  handleExitRoom(
+  async handleExitRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() username
   ) {
     const room = this.getClientCurrentRoom(client);
     if (room) {
-      this.service.removeMember(room, client.id);
+      await this.service.removeMember(room, client.id);
       client.leave(room);
       this.server.to(room).emit('exitedRoom', username)
     }

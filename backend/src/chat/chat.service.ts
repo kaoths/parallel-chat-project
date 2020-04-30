@@ -24,6 +24,7 @@ export class ChatService {
       {
         $push: { members: name },
       },
+      { new: true }
     );
   }
 
@@ -33,6 +34,7 @@ export class ChatService {
       {
         $push: { messages: message },
       },
+      { new: true }
     );
   }
 
@@ -42,6 +44,7 @@ export class ChatService {
       {
         $pull: { members: name },
       },
+      { new: true }
     );
   }
 
