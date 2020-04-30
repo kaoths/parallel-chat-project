@@ -15,26 +15,27 @@ export class ChatGateway {
   constructor(private readonly service: ChatService) {}
 
   @SubscribeMessage('addRoom')
-  handleAddRoom(
+  async handleAddRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() { username, roomName },
-  ) {
+  ): Promise<void> {
     const room = this.getClientCurrentRoom(client);
     if (room) client.leave(room);
-    this.service.createChat(roomName);
+    const roomInfo = await this.service.createChat(roomName);
     client.join(roomName);
-    this.server.to(client.id).emit('joinedRoom', { username, roomName });
+    this.server.to(client.id).emit('joinedRoom', { username, roomName , roomInfo });
   }
 
   @SubscribeMessage('joinRoom')
-  handleJoinRoom(
+  async handleJoinRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() { username, roomName },
-  ): void {
+  ): Promise<void> {
     const room = this.getClientCurrentRoom(client);
     if (room) client.leave(room);
+    const roomInfo = await this.service.getRoomInformation(roomName);
     client.join(roomName);
-    this.server.to(room).emit('joinedRoom', { username, roomName })
+    this.server.to(room).emit('joinedRoom', { username, roomName , roomInfo })
   }
 
   @SubscribeMessage('toRoom')
