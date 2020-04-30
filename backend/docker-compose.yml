@@ -12,6 +12,8 @@ services:
       - ./nest-cli.json:/server/nest-cli.json
       - ./tsconfig.json:/server/tsconfig.json
       - ./tsconfig.build.json:/server/tsconfig.build.json
+    environment:
+      MONGO_URL: mongodb://db:27017
     command: sh -c 'cd /server && yarn && yarn start:dev'
     expose:
       - 3000
