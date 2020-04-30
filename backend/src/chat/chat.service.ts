@@ -49,8 +49,4 @@ export class ChatService {
     return this.model.findOne({ roomName })
   }
 
-  async getRoomMessages(roomName: string) {
-    const room = await this.getRoomInformation(roomName);
-    return room.messages;
-  }
 }
