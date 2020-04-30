@@ -17,55 +17,60 @@ export class ChatGateway {
   @SubscribeMessage('addRoom')
   handleAddRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() roomName: string,
+    @MessageBody() { username, roomName },
   ) {
     const room = this.getClientCurrentRoom(client);
-    if (room) {
-      this.service.createChat(roomName);
-      client.join(roomName);
-      this.server.to(client.id).emit('joinedRoom', roomName);
-    }
+    if (room) client.leave(room);
+    this.service.createChat(roomName);
+    client.join(roomName);
+    this.server.to(client.id).emit('joinedRoom', { username, roomName });
   }
 
   @SubscribeMessage('joinRoom')
   handleJoinRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() roomName: string,
+    @MessageBody() { username, roomName },
   ): void {
     const room = this.getClientCurrentRoom(client);
-    if (room) {
-      client.leave(room);
-    }
+    if (room) client.leave(room);
     client.join(roomName);
-    this.server.to(client.id).emit('joinedRoom', roomName);
+    this.server.to(room).emit('joinedRoom', { username, roomName })
   }
 
   @SubscribeMessage('toRoom')
   handleMessageToRoom(
     @ConnectedSocket() client: Socket,
-    @MessageBody() message: string,
+    @MessageBody() { username, message },
   ) {
     const room = this.getClientCurrentRoom(client);
     if (room) {
       this.service.addMessage(room, { sender: client.id,  message });
-      this.server.to(room).emit('toClient', message);
+      this.server.to(room).emit('toClient', { username, message });
     }
   }
 
   @SubscribeMessage('leaveRoom')
-  handleLeaveRoom(@ConnectedSocket() client: Socket) {
+  handleLeaveRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() username
+  ) {
     const room = this.getClientCurrentRoom(client);
     if (room) {
       client.leave(room);
+      this.server.to(room).emit('leftRoom', username)
     }
   }
 
   @SubscribeMessage('exitRoom')
-  handleExitRoom(@ConnectedSocket() client: Socket) {
+  handleExitRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() username
+  ) {
     const room = this.getClientCurrentRoom(client);
     if (room) {
       this.service.removeMember(room, client.id);
       client.leave(room);
+      this.server.to(room).emit('exitedRoom', username)
     }
   }
 
