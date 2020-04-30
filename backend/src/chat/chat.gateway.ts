@@ -14,29 +14,30 @@ export class ChatGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage('toServer')
   handleMessage(@ConnectedSocket() client: Socket, @MessageBody() payload: any): void {
-    this.server.emit('toClient', payload); //echo checker
+    this.server.to(client.id).emit('toClient', payload); //echo checker
   }
 
   @SubscribeMessage('joinRoom')
-  handleJoinRoom(@ConnectedSocket() client: Socket, @MessageBody() roomName: string): void {
+  handleJoinRoom(@ConnectedSocket() client: Socket, @MessageBody() { username, roomName}): void {
     const room = this.getClientCurrentRoom(client);
     if (room) {
-      return //client is already in another room --> leave first
+      client.leave(room);
     }
     client.join(roomName);
-    this.server.to(client.id).emit('joinedRoom', roomName);
+    this.server.to(room).emit('joinedRoom', { username, roomName })
   }
 
   @SubscribeMessage('toRoom')
-  handleMessageToRoom(@ConnectedSocket() client: Socket, @MessageBody() message: string) {
+  handleMessageToRoom(@ConnectedSocket() client: Socket, @MessageBody() { username, message }) {
     const room = this.getClientCurrentRoom(client);
-    if (room) this.server.to(room).emit('toClient', message);
+    if (room) this.server.to(room).emit('toClient', { username, message });
   }
 
   @SubscribeMessage('leaveRoom')
-  handleLeaveRoom(@ConnectedSocket() client: Socket) {
+  handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() username) {
     const room = this.getClientCurrentRoom(client);
     if (room) client.leave(room);
+    this.server.to(room).emit('leftRoom', username)
   }
 
   afterInit(server: Server) {
