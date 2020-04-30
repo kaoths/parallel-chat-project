@@ -1,7 +1,10 @@
 import React from 'react';
 import { Form, Input, Modal, Select } from 'antd';
 
-class CreateGroup extends React.Component {
+class CreateRoom extends React.Component {
+  state = {
+    mode: 'create'
+  }
   onFinish = values => {
     const { socket } = this.props;
     const username = localStorage.getItem("username")
@@ -26,31 +29,34 @@ class CreateGroup extends React.Component {
       onCancel,
       visible
     } = this.props;
+    const { mode } = this.state;
     return (
       <Modal 
         style={{ width: 500, maxWidth: '95%' }} 
         visible={visible}
         onCancel={onCancel}
         okButtonProps={{form:'create-group-form', key: 'submit', htmlType: 'submit'}}
-        okText="Create"
+        okText={ mode === 'create' ? 'Create' : 'Join'}
       >
         <Form
           name="basic"
           onFinish={this.onFinish}
           id="create-group-form"
         >
-          <Select defaultValue="create" style={{ width: 120 }} onChange={this.handleChange}>
-            <Select.Option value="create">Create</Select.Option>
-            <Select.Option value="join">Join</Select.Option>
-          </Select>
-          <h2>Create a Group</h2>
+          <Form.Item className="mb-3">
+            <Select defaultValue="create" style={{ width: 120 }} onChange={this.handleChange}>
+              <Select.Option value="create">Create</Select.Option>
+              <Select.Option value="join">Join</Select.Option>
+            </Select>
+          </Form.Item>
+          <h2>{ mode === 'create' ? 'Create a Room' : 'Join an Existing Room'}</h2>
           <Form.Item
-            label="Group Id"
+            label="Room Id"
             name="groupId"
             className="mb-2"
             rules={[{ required: true, message: 'This field is required' }]}
           >
-            <Input placeholder="Enter Group ID"/>
+            <Input placeholder="Enter Room ID"/>
           </Form.Item>
         </Form>
       </Modal>
@@ -58,4 +64,4 @@ class CreateGroup extends React.Component {
   }
 }
 
-export default CreateGroup;
+export default CreateRoom;

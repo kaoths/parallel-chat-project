@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button, Menu, Input, Dropdown, Tag } from 'antd';
 import io from "socket.io-client";
-import CreateGroup from './components/CreateGroup';
+import CreateRoom from './components/CreateRoom';
 import Username from "./components/Username";
 import { SendOutlined, EllipsisOutlined} from '@ant-design/icons';
 
@@ -11,11 +11,12 @@ const socket = io(url);
 class App extends React.Component {
   state = {
     showUsername: false,
-    showCreateGroup: false,
+    showCreateRoom: false,
     messageBox: "",
-    currentGroupId: null,
+    currentRoomName: null,
     messages: [],
-    username: ""
+    username: "",
+    groups: ["RoomName"]
   }
   componentDidMount() {
     if (!localStorage.getItem('username')) {
@@ -25,17 +26,18 @@ class App extends React.Component {
     }
     if (socket !== null) {
       socket.on('joinedRoom', (data) => {
+        // Set Room and Recieve Messages
         this.setState({ 
-          currentGroupId: data.roomName,
+          currentRoomName: data.roomName,
           messages: data.messages 
         })
       })
       socket.on('toClient', (data) => {
-        console.log(data);
-        // const m = [...this.state.messages];
-        // this.setState({
-        //   messages: m.push(data.message)
-        // })
+        // Recieve Messages
+        const m = [...this.state.messages];
+        this.setState({
+          messages: m.push(data.message)
+        })
       })
     }
   }
@@ -43,7 +45,7 @@ class App extends React.Component {
     e.preventDefault();
     const { messageBox, username } = this.state;
     if (messageBox && messageBox !== "") {
-      // Send Message Here
+      // Send Message
       socket.emit('toRoom',{
         username,
         message: messageBox
@@ -51,18 +53,29 @@ class App extends React.Component {
       this.setState({ messageBox: ""});
     }
   }
-  leaveCurrentGroup = () => {
-    // Leave Group
+  changeRoom = (roomName) => {
+    this.leaveCurrentRoom();
+    socket.emit('joinRoom', {
+      username: this.state.username,
+      roomName
+    });
+    this.setState({ currentRoomName: roomName })
+  }
+  leaveCurrentRoom = () => {
+    // Leave Room
     const { username } = this.state;
     socket.emit('leaveRoom', username)
   }
+  resetCurrentRoomName = () => {
+    this.setState({ currentRoomName: null });
+  }
   componentWillUnmount = () => {
-    // Temporarily Exit Group
+    // Temporarily Exit Room
     const { username } = this.state;
     socket.emit('exitRoom', username)
   }
   render() {
-    const { showUsername, showCreateGroup, messageBox, username, messages } = this.state;
+    const { showUsername, showCreateRoom, messageBox, username, messages, groups } = this.state;
     return (
       <div>
         <nav className="main">
@@ -82,28 +95,30 @@ class App extends React.Component {
             style={{ width: 256 }}
             mode="inline"
           >
-            <Menu.Item 
-              key="1" 
-              className="ma-0 d-flex justify-space-between align-center"
-              onClick={() => this.setState({ currentGroupId: 1 })}
-            >
-              <div className="d-flex align-center">
-                <span>Group 1</span>
-                <Tag color="#f5222d" className="ml-2 rounded-max">10</Tag>
-              </div>
-              <Dropdown placement="bottomRight" overlay={() => (
-                <Menu style={{ marginTop: -8 }}>
-                  <Menu.Item 
-                    className="t-color-error"
-                    onClick={() => this.leaveCurrentGroup()}
-                  >Leave Group</Menu.Item>
-                </Menu>
-              )} trigger={['click']}>
-                <Button type="link" className="pa-0">
-                  <EllipsisOutlined />
-                </Button>
-              </Dropdown>
-            </Menu.Item>
+            {groups.map((e,i) => (
+              <Menu.Item 
+                key={'group' + i} 
+                className="ma-0 d-flex justify-space-between align-center"
+                onClick={() => this.changeRoom(e)}
+              >
+                <div className="d-flex align-center">
+                  <span>{e}</span>
+                  <Tag color="#f5222d" className="ml-2 rounded-max">10</Tag>
+                </div>
+                <Dropdown placement="bottomRight" overlay={() => (
+                  <Menu style={{ marginTop: -8 }}>
+                    <Menu.Item 
+                      className="t-color-error"
+                      onClick={() => this.leaveCurrentRoom()}
+                    >Leave Room</Menu.Item>
+                  </Menu>
+                )} trigger={['click']}>
+                  <Button type="link" className="pa-0">
+                    <EllipsisOutlined />
+                  </Button>
+                </Dropdown>
+              </Menu.Item>
+            ))}
             <div 
               className="bottom-bar full-width pa-2"
               style={{ 
@@ -114,11 +129,11 @@ class App extends React.Component {
             >
               <Button 
                 type="primary" 
-                onClick={() => this.setState({ showCreateGroup: true })}
+                onClick={() => this.setState({ showCreateRoom: true })}
                 className="full-width"
                 style={{ boxSizing: 'border-box' }}
               >
-                Create or Join a Group
+                Create or Join a Room
               </Button>
             </div>
           </Menu>
@@ -158,9 +173,9 @@ class App extends React.Component {
               </form>
             </div>
           </main>
-          <CreateGroup
-            visible={showCreateGroup}
-            onCancel={() => this.setState({ showCreateGroup: false })}
+          <CreateRoom
+            visible={showCreateRoom}
+            onCancel={() => this.setState({ showCreateRoom: false })}
             url={url}
             socket={socket}
           />
@@ -169,6 +184,7 @@ class App extends React.Component {
             onCancel={() => this.setState({ showUsername: false })}
             url={url}
             socket={socket}
+            reset={() => this.resetCurrentRoomName()}
           />
         </div>
       </div>

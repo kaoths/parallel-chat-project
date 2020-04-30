@@ -7,6 +7,7 @@ const Username = (props) => {
     if (values.username && values.username !== "") {
       localStorage.setItem("username", values.username);
       props.onCancel(); // Dismiss Modal
+      props.reset();
     }
   };
   const {
