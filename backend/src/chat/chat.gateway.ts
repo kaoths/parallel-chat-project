@@ -39,14 +39,15 @@ export class ChatGateway {
   }
 
   @SubscribeMessage('toRoom')
-  handleMessageToRoom(
+  chandleMessageToRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() { username, message },
   ) {
     const room = this.getClientCurrentRoom(client);
     if (room) {
-      this.service.addMessage(room, { sender: client.id,  message });
-      this.server.to(room).emit('toClient', { username, message });
+      const timestamp = new Date();
+      this.service.addMessage(room, { sender: client.id,  message, timestamp });
+      this.server.to(room).emit('toClient', { username, message, timestamp });
     }
   }
 
