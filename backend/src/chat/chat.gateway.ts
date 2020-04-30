@@ -23,7 +23,7 @@ export class ChatGateway {
     if (room) client.leave(room);
     const roomInfo = await this.service.createChat(roomName);
     client.join(roomName);
-    this.server.to(client.id).emit('joinedRoom', { username, roomName , roomInfo });
+    this.server.to(client.id).emit('joinedRoom', { username, roomInfo });
   }
 
   @SubscribeMessage('joinRoom')
@@ -35,7 +35,7 @@ export class ChatGateway {
     if (room) client.leave(room);
     const roomInfo = await this.service.getRoomInformation(roomName);
     client.join(roomName);
-    this.server.to(room).emit('joinedRoom', { username, roomName , roomInfo })
+    this.server.to(room).emit('joinedRoom', { username, roomInfo })
   }
 
   @SubscribeMessage('toRoom')
