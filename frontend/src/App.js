@@ -1,35 +1,68 @@
 import React from 'react';
 import { Button, Menu, Input, Dropdown, Tag } from 'antd';
-import JoinGroup from './components/JoinGroup';
+import io from "socket.io-client";
+import CreateGroup from './components/CreateGroup';
 import Username from "./components/Username";
 import { SendOutlined, EllipsisOutlined} from '@ant-design/icons';
 
+const url = process.env.REACT_APP_API_URL
+const socket = io(url);
+
 class App extends React.Component {
   state = {
-    showJoinGroup: false,
     showUsername: false,
+    showCreateGroup: false,
     messageBox: "",
-    currentChatId: null
+    currentGroupId: null,
+    messages: [],
+    username: ""
   }
   componentDidMount() {
     if (!localStorage.getItem('username')) {
       this.setState({ showUsername: true })
+    } else {
+      this.setState({ username: localStorage.getItem('username') });
+    }
+    if (socket !== null) {
+      socket.on('joinedRoom', (data) => {
+        this.setState({ 
+          currentGroupId: data.roomName,
+          messages: data.messages 
+        })
+      })
+      socket.on('toClient', (data) => {
+        console.log(data);
+        // const m = [...this.state.messages];
+        // this.setState({
+        //   messages: m.push(data.message)
+        // })
+      })
     }
   }
   sendMessage = (e) => {
     e.preventDefault();
-    const { messageBox } = this.state;
+    const { messageBox, username } = this.state;
     if (messageBox && messageBox !== "") {
       // Send Message Here
-      console.log(messageBox);
+      socket.emit('toRoom',{
+        username,
+        message: messageBox
+      })
       this.setState({ messageBox: ""});
     }
   }
   leaveCurrentGroup = () => {
     // Leave Group
+    const { username } = this.state;
+    socket.emit('leaveRoom', username)
+  }
+  componentWillUnmount = () => {
+    // Temporarily Exit Group
+    const { username } = this.state;
+    socket.emit('exitRoom', username)
   }
   render() {
-    const { showUsername, showJoinGroup, messageBox } = this.state;
+    const { showUsername, showCreateGroup, messageBox, username, messages } = this.state;
     return (
       <div>
         <nav className="main">
@@ -52,7 +85,7 @@ class App extends React.Component {
             <Menu.Item 
               key="1" 
               className="ma-0 d-flex justify-space-between align-center"
-              onClick={() => this.setState({ currentChatId: 1 })}
+              onClick={() => this.setState({ currentGroupId: 1 })}
             >
               <div className="d-flex align-center">
                 <span>Group 1</span>
@@ -81,33 +114,24 @@ class App extends React.Component {
             >
               <Button 
                 type="primary" 
-                onClick={() => this.setState({ showJoinGroup: true })}
+                onClick={() => this.setState({ showCreateGroup: true })}
                 className="full-width"
                 style={{ boxSizing: 'border-box' }}
               >
-                Join a Group
+                Create or Join a Group
               </Button>
             </div>
           </Menu>
           <main>
             <div className="pa-2">
-              <div className="speech-bubble-wrapper theirs">
-                <div className="speech-name">Someone</div>
-                <div className="speech-bubble theirs">
-                  Hello
+              { messages.map((e,i) => (
+                <div className={`speech-bubble-wrapper ${e.sender === username ? 'mine' : 'theirs'}`}>
+                  <div className="speech-name">{e.sender}</div>
+                  <div className={`speech-bubble ${e.sender === username ? 'mine' : 'theirs'}`}>
+                    {e.message}
+                  </div>
                 </div>
-              </div>
-              <div className="speech-bubble-wrapper mine">
-                <div className="speech-name">Me</div>
-                <div className="speech-bubble mine">
-                  Hello there!
-                </div>
-              </div>
-              <div className="speech-bubble-wrapper mine">
-                <div className="speech-bubble mine">
-                  Lorem ipsum dolor sit amet
-                </div>
-              </div>
+              ))}
             </div>
             <div 
               className="bottom-bar full-width pa-2"
@@ -134,13 +158,17 @@ class App extends React.Component {
               </form>
             </div>
           </main>
-          <JoinGroup
-            visible={showJoinGroup}
-            onCancel={() => this.setState({ showJoinGroup: false })}
+          <CreateGroup
+            visible={showCreateGroup}
+            onCancel={() => this.setState({ showCreateGroup: false })}
+            url={url}
+            socket={socket}
           />
           <Username
             visible={showUsername}
             onCancel={() => this.setState({ showUsername: false })}
+            url={url}
+            socket={socket}
           />
         </div>
       </div>
