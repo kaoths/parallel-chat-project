@@ -46,7 +46,7 @@ export class ChatGateway implements OnGatewayConnection {
     });
     client.join(roomName);
     this.server
-      .to(client.id)
+      .to(roomName)
       .emit('joinedRoom', { username, roomInfo, lastActiveAt });
   }
 
@@ -69,7 +69,7 @@ export class ChatGateway implements OnGatewayConnection {
     });
     client.join(roomName);
     this.server
-      .to(room)
+      .to(roomName)
       .emit('joinedRoom', { username, roomInfo, lastActiveAt });
   }
 
