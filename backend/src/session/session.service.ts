@@ -11,7 +11,7 @@ export class SessionService {
   ) {}
 
   findOne(conditions) {
-    return this.model.findOne(conditions);
+    return this.model.findOne(conditions, { upsert: true });
   }
 
   create(sessionDTO) {

@@ -34,11 +34,13 @@ export class ChatGateway implements OnGatewayConnection {
   ): Promise<void> {
     const room = this.getClientCurrentRoom(client);
     if (room) {
+      await this.sessionService.update({ username, room });
       client.leave(room);
+      this.server.to(room).emit('leftRoom', username);
     }
     const roomInfo = await this.service.createChat(roomName);
     await this.service.addMember(roomName, username);
-    const { lastActiveAt } = await this.sessionService.update({
+    const { lastActiveAt } = await this.sessionService.findOne({
       username,
       roomName,
     });
@@ -55,11 +57,13 @@ export class ChatGateway implements OnGatewayConnection {
   ): Promise<void> {
     const room = this.getClientCurrentRoom(client);
     if (room) {
+      await this.sessionService.update({ username, room });
       client.leave(room);
+      this.server.to(room).emit('leftRoom', username);
     }
     const roomInfo = await this.service.getRoomInformation(roomName);
     await this.service.addMember(roomName, username);
-    const { lastActiveAt } = await this.sessionService.update({
+    const { lastActiveAt } = await this.sessionService.findOne({
       username,
       roomName,
     });
