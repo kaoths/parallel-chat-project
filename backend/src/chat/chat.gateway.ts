@@ -34,7 +34,7 @@ export class ChatGateway implements OnGatewayConnection {
   ): Promise<void> {
     const room = this.getClientCurrentRoom(client);
     if (room) {
-      await this.sessionService.update({ username, room });
+      await this.sessionService.update({ username, roomName: room });
       client.leave(room);
       this.server.to(room).emit('leftRoom', username);
     }
@@ -57,7 +57,7 @@ export class ChatGateway implements OnGatewayConnection {
   ): Promise<void> {
     const room = this.getClientCurrentRoom(client);
     if (room) {
-      await this.sessionService.update({ username, room });
+      await this.sessionService.update({ username, roomName: room });
       client.leave(room);
       this.server.to(room).emit('leftRoom', username);
     }
