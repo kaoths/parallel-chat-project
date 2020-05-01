@@ -27,7 +27,7 @@ export class ChatService {
   async addMember(roomName: string, name: string) {
     const joined = await this.model.findOne({
       roomName,
-      members: { $elemMatch: { name } },
+      members: name,
     });
     if (joined) return;
     return this.model.findOneAndUpdate(

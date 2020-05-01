@@ -58,8 +58,7 @@ export class ChatGateway implements OnGatewayConnection {
       client.leave(room);
     }
     const roomInfo = await this.service.getRoomInformation(roomName);
-    if (!roomInfo.members.includes(username))
-      await this.service.addMember(roomName, username);
+    await this.service.addMember(roomName, username);
     const { lastActiveAt } = await this.sessionService.update({
       username,
       roomName,
