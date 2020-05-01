@@ -10,8 +10,12 @@ export class SessionService {
     private readonly model: ReturnModelType<typeof Session>,
   ) {}
 
-  findOne(conditions) {
-    return this.model.findOne({ $set: conditions }, { upsert: true });
+  async findOne(conditions) {
+    let session = await this.model.findOne(conditions);
+    if (!session) {
+      session = await this.create(conditions);
+    }
+    return session;
   }
 
   create(sessionDTO) {
