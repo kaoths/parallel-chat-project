@@ -26,7 +26,6 @@ class App extends React.Component {
   componentDidMount() {
     if (socket !== null) {
       socket.on('joinedRoom', (data) => {
-        console.log(data);
         // Set Room and Recieve Messages
         if (data.roomInfo.messages) {
           const messages = data.roomInfo.messages;
@@ -55,7 +54,7 @@ class App extends React.Component {
           }
         }
         this.setState({ 
-          currentRoomName: data.roomInfo.roomName,
+          currentRoomName: data,
           showCreateRoom: false,
         })
         // Change room
@@ -117,7 +116,6 @@ class App extends React.Component {
     res.rooms.forEach(e => {
       r[e._id] = e
     });
-    console.log(r);
     this.setState({
       username: res.username,
       token: res.token,
@@ -127,8 +125,9 @@ class App extends React.Component {
     })
     
   }
-  logout = () => {
+  logout = (username) => {
     this.resetCurrentRoomName();
+    socket.emit('leaveRoom', username);
     this.setState({
       username: "",
       token: null,
@@ -141,7 +140,7 @@ class App extends React.Component {
     // Temporarily Exit Room
     const { username } = this.state;
     socket.emit('leaveRoom', username);
-    this.logout();
+    this.logout(username);
   }
   render() {
     const { showUsername, 
@@ -157,7 +156,7 @@ class App extends React.Component {
       <div>
         <Nav 
           isAuth={isAuth} 
-          logout={() => this.logout()} 
+          logout={() => this.logout(username)} 
           onButtonClick={() => this.setState({ showUsername: true })}
         />
         <div style={{ paddingTop: '48px' }}>
@@ -221,6 +220,7 @@ class App extends React.Component {
             onCancel={() => this.setState({ showCreateRoom: false })}
             url={url}
             socket={socket}
+            username={username}
           />
           <Username
             visible={showUsername}

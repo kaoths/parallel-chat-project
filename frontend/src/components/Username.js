@@ -13,7 +13,6 @@ class Username extends React.Component {
       username: values.username,
       password: values.password
     }).then(res => {
-      console.log(res);
       this.props.onLogin({
         username: values.username,
         token: res.data.token,

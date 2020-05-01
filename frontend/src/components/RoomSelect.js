@@ -10,7 +10,7 @@ class RoomSelect extends React.Component {
     this.props.exitRoom(e)
   }
   render() {
-    const { rooms, onCreateClick, isAuth } = this.props;
+    const { rooms, onCreateClick, isAuth, defaultSelectedKeys } = this.props;
     return (
       <Menu
         className="main-menu"
@@ -19,6 +19,7 @@ class RoomSelect extends React.Component {
           overflowY: 'scroll',
           paddingBottom: 49
         }}
+        defaultSelectedKeys={defaultSelectedKeys}
         mode="inline"
       >
         {Object.keys(rooms).map((e,i) => (

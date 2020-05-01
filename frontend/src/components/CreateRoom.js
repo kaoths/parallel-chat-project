@@ -6,8 +6,7 @@ class CreateRoom extends React.Component {
     mode: 'join'
   }
   onFinish = values => {
-    const { socket } = this.props;
-    const username = localStorage.getItem("username")
+    const { socket, username } = this.props;
     if (this.state.mode === 'create') {
       socket.emit('addRoom',{
         username,
