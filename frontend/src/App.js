@@ -19,39 +19,49 @@ class App extends React.Component {
     currentRoomName: null,
     messages: [],
     username: "",
-    rooms: [],
+    rooms: {},
     isAuth: false,
     token: null,
   }
   componentDidMount() {
     if (socket !== null) {
       socket.on('joinedRoom', (data) => {
-        // Set Room and Recieve Messages
         console.log(data);
+        // Set Room and Recieve Messages
         if (data.roomInfo.messages) {
           const messages = data.roomInfo.messages;
-          const lastMessageTime = Date.parse(messages[messages.length-1].timestamp)
-          let mesWithBanner = [];
-          if (Date.parse(data.lastActiveAt) < lastMessageTime) {
-            mesWithBanner = [{
-              type: 'banner',
-              content: 'Unread Messages Below',
-              timestamp: data.lastActiveAt
-            },...data.roomInfo.messages];
-            mesWithBanner = mesWithBanner.sort((a,b) => {
-              return a.timestamp.localeCompare(b.timestamp)
-            });
+          if (messages.length > 0) {
+            const lastMessageTime = Date.parse(messages[messages.length-1].timestamp)
+            let mesWithBanner = [];
+            if (Date.parse(data.lastActiveAt) < lastMessageTime) {
+              mesWithBanner = [{
+                type: 'banner',
+                content: 'Unread Messages Below',
+                timestamp: data.lastActiveAt
+              },...data.roomInfo.messages];
+              mesWithBanner = mesWithBanner.sort((a,b) => {
+                return a.timestamp.localeCompare(b.timestamp)
+              });
+            } else {
+              mesWithBanner = messages;
+            }
+            this.setState({ 
+              messages: mesWithBanner,
+            })
           } else {
-            mesWithBanner = messages;
+            this.setState({ 
+              messages,
+            })
           }
-          this.setState({ 
-            messages: mesWithBanner,
-          })
         }
         this.setState({ 
           currentRoomName: data.roomInfo.roomName,
           showCreateRoom: false,
         })
+        // Change room
+        let r = this.state.rooms
+        r[data.roomInfo._id] = data.roomInfo;
+        this.setState({ rooms: r })
       })
       socket.on('toClient', (data) => {
         // Recieve Messages
@@ -78,16 +88,19 @@ class App extends React.Component {
       this.setState({ messageBox: ""});
     }
   }
-  changeRoom = (roomName) => {
-    this.leaveCurrentRoom();
-    socket.emit('joinRoom', {
-      username: this.state.username,
-      roomName
-    });
+  changeRoom = (room) => {
+    if (room) {
+      socket.emit('joinRoom', {
+        username: this.state.username,
+        roomName: room.roomName
+      });
+    }
   }
-  leaveCurrentRoom = () => {
+  exitCurrentRoom = (room) => {
     // Leave Room
-    socket.emit('leaveRoom', this.state.username);
+    const r = this.state.rooms;
+    delete r[room._id]
+    socket.emit('exitRoom', this.state.username);
     this.setState({ 
       currentRoomName: null,
       messages: [] 
@@ -103,9 +116,12 @@ class App extends React.Component {
     this.setState({
       username: res.username,
       token: res.token,
-      rooms: res.rooms,
       showUsername: false,
       isAuth: true
+    })
+    res.rooms.forEach(e => {
+      let r = {};
+      r._id = e
     })
   }
   logout = () => {
@@ -114,13 +130,14 @@ class App extends React.Component {
       username: "",
       token: null,
       isAuth: false,
-      showUsername: true
+      showUsername: true,
+      rooms: {}
     })
   }
   componentWillUnmount = () => {
     // Temporarily Exit Room
     const { username } = this.state;
-    socket.emit('exitRoom', username);
+    socket.emit('leaveRoom', username);
     this.logout();
   }
   render() {
@@ -143,7 +160,7 @@ class App extends React.Component {
         <div style={{ paddingTop: '48px' }}>
           <RoomSelect
             rooms={rooms}
-            leaveRoom={() => this.leaveCurrentRoom()}
+            exitRoom={this.exitCurrentRoom}
             onChange={this.changeRoom}
             onCreateClick={() => this.setState({ showCreateRoom: true })}
             isAuth={isAuth}

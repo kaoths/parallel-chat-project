@@ -6,27 +6,30 @@ class RoomSelect extends React.Component {
   handleChange = (e) => {
     this.props.onChange(e)
   }
+  exit = (e) => {
+    this.props.exitRoom(e)
+  }
   render() {
-    const { rooms, leaveRoom, onCreateClick, isAuth } = this.props;
+    const { rooms, onCreateClick, isAuth } = this.props;
     return (
       <Menu
         className="main-menu"
         style={{ width: 256 }}
         mode="inline"
       >
-        {rooms.map((e,i) => (
+        {Object.keys(rooms).map((e,i) => (
           <Menu.Item 
-            key={'group' + i} 
+            key={'room' + e} 
             className="ma-0 d-flex justify-space-between align-center"
-            onClick={() => this.handleChange(e)}
+            onClick={() => this.handleChange(rooms[e])}
           >
-            <span>{e.roomName}</span>
+            <span>{rooms[e].roomName}</span>
             <Dropdown placement="bottomRight" overlay={() => (
               <Menu style={{ marginTop: -8 }}>
                 <Menu.Item 
                   className="t-color-error"
-                  onClick={leaveRoom}
-                >Leave Room</Menu.Item>
+                  onClick={() => this.exit(rooms[e])}
+                >Exit Room</Menu.Item>
               </Menu>
             )} trigger={['click']}>
               <Button type="link" className="pa-0">
