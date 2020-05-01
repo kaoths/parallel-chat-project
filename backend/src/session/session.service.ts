@@ -11,7 +11,7 @@ export class SessionService {
   ) {}
 
   findOne(conditions) {
-    return this.model.findOne(conditions, { upsert: true });
+    return this.model.findOne({ $set: conditions }, { upsert: true });
   }
 
   create(sessionDTO) {
@@ -23,7 +23,9 @@ export class SessionService {
     return this.model.findOneAndUpdate(
       sessionDTO,
       {
-        lastActiveAt: new Date(),
+        $set: {
+          lastActiveAt: new Date(),
+        },
       },
       { new: true, upsert: true },
     );
