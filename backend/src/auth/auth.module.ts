@@ -5,14 +5,14 @@ import { JwtModule } from '@nestjs/jwt';
 import { UserModule } from 'src/user/user.module';
 
 @Module({
-  imports:[
+  imports: [
     JwtModule.register({
-      secret: 'parallel-chat'
+      secret: 'parallel-chat',
     }),
-    UserModule
+    UserModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],
-  exports: [AuthService]
+  exports: [AuthService],
 })
 export class AuthModule {}

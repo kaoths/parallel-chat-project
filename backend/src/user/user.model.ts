@@ -8,5 +8,4 @@ export class User {
 
   @prop({ required: true, select: false })
   password: string;
-
 }

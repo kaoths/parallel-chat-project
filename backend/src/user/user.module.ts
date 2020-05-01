@@ -5,17 +5,16 @@ import { TypegooseModule } from 'nestjs-typegoose';
 import { User } from './user.model';
 
 @Module({
-    imports: [
-        TypegooseModule.forFeature([
-            {
-                typegooseClass: User,
-                schemaOptions: { timestamps: true },
-            },
-        ]),
-    ],
-    controllers: [UserController],
-    providers: [UserService],
-    exports: [UserService],
+  imports: [
+    TypegooseModule.forFeature([
+      {
+        typegooseClass: User,
+        schemaOptions: { timestamps: true },
+      },
+    ]),
+  ],
+  controllers: [UserController],
+  providers: [UserService],
+  exports: [UserService],
 })
-export class UserModule {
-}
+export class UserModule {}

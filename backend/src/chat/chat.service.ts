@@ -24,7 +24,7 @@ export class ChatService {
       {
         $push: { members: name },
       },
-      { new: true }
+      { new: true },
     );
   }
 
@@ -34,7 +34,7 @@ export class ChatService {
       {
         $push: { messages: message },
       },
-      { new: true }
+      { new: true },
     );
   }
 
@@ -44,12 +44,11 @@ export class ChatService {
       {
         $pull: { members: name },
       },
-      { new: true }
+      { new: true },
     );
   }
 
   getRoomInformation(roomName: string) {
-    return this.model.findOne({ roomName })
+    return this.model.findOne({ roomName });
   }
-
 }
