@@ -13,35 +13,17 @@ const socket = io(url);
 
 class App extends React.Component {
   state = {
-    showUsername: false,
+    showUsername: true,
     showCreateRoom: false,
     messageBox: "",
     currentRoomName: null,
     messages: [],
     username: "",
-    rooms: [{
-      roomName: "Room Name",
-      _id: "123"
-    },{
-      roomName: "Room 2",
-      _id: "234"
-    }],
+    rooms: [],
     isAuth: false,
     token: null,
-    roomLastActive: null
   }
   componentDidMount() {
-    if (!localStorage.getItem('token') || !localStorage.getItem('username')) {
-      this.setState({ 
-        showUsername: true,
-      })
-    } else {
-      this.setState({ 
-        username: localStorage.getItem('username'),
-        token: localStorage.getItem('token'),
-        isAuth: true
-      });
-    }
     if (socket !== null) {
       socket.on('joinedRoom', (data) => {
         // Set Room and Recieve Messages
@@ -97,12 +79,11 @@ class App extends React.Component {
     }
   }
   changeRoom = (roomName) => {
-    console.log(roomName);
-    // this.leaveCurrentRoom();
-    // socket.emit('joinRoom', {
-    //   username: this.state.username,
-    //   roomName
-    // });
+    this.leaveCurrentRoom();
+    socket.emit('joinRoom', {
+      username: this.state.username,
+      roomName
+    });
   }
   leaveCurrentRoom = () => {
     // Leave Room
@@ -118,9 +99,14 @@ class App extends React.Component {
       messages: [] 
     });
   }
+  login = (res) => {
+    this.setState({
+      username: res.username,
+      token: res.token,
+      rooms: res.rooms
+    })
+  }
   logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
     this.resetCurrentRoomName();
     this.setState({
       username: "",
@@ -132,7 +118,8 @@ class App extends React.Component {
   componentWillUnmount = () => {
     // Temporarily Exit Room
     const { username } = this.state;
-    socket.emit('exitRoom', username)
+    socket.emit('exitRoom', username);
+    this.logout();
   }
   render() {
     const { showUsername, 
@@ -158,6 +145,7 @@ class App extends React.Component {
             onChange={this.changeRoom}
             onCreateClick={() => this.setState({ showCreateRoom: true })}
             isAuth={isAuth}
+            onLogin={this.login}
           />
           <main>
             <div className="messages-wrapper">

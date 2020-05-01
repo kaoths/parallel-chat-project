@@ -13,9 +13,11 @@ class Username extends React.Component {
       username: values.username,
       password: values.password
     }).then(res => {
-      localStorage.setItem('username',values.username)
-      localStorage.setItem('token',res.data)
-      window.location.reload();
+      this.props.onLogin({
+        username: values.username,
+        token: res.data.token,
+        rooms: res.data.rooms
+      })
     })
   };
   handleChange = (value) => {
