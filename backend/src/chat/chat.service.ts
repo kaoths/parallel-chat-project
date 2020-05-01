@@ -15,9 +15,7 @@ export class ChatService {
 
   findByUsername(username: string) {
     return this.model.find({
-      members: {
-        $elemMatch: { username },
-      },
+      members: username,
     });
   }
 
