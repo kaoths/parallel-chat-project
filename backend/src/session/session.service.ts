@@ -25,7 +25,7 @@ export class SessionService {
       {
         lastActiveAt: new Date(),
       },
-      { new: true },
+      { new: true, upsert: true },
     );
   }
 

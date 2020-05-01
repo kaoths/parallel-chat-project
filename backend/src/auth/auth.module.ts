@@ -11,7 +11,7 @@ import { ChatModule } from '../chat/chat.module';
       secret: 'parallel-chat',
     }),
     UserModule,
-    ChatModule
+    ChatModule,
   ],
   controllers: [AuthController],
   providers: [AuthService],

@@ -8,6 +8,6 @@ import { SessionModule } from '../session/session.module';
 @Module({
   imports: [TypegooseModule.forFeature([Chat]), SessionModule],
   providers: [ChatGateway, ChatService],
-  exports: [ChatService]
+  exports: [ChatService],
 })
 export class ChatModule {}
