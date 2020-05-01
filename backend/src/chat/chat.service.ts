@@ -13,6 +13,14 @@ export class ChatService {
     return this.model.findOne({ roomName });
   }
 
+  findByUsername(username: string) {
+    return this.model.findOne({
+      members: {
+        $elemMatch: { username },
+      },
+    });
+  }
+
   createChat(roomName: string) {
     const chat = new this.model({ roomName });
     return chat.save();

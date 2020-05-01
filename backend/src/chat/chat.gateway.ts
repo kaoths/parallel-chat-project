@@ -4,19 +4,28 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
+  OnGatewayConnection,
 } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
 import { ChatService } from './chat.service';
 import { SessionService } from '../session/session.service';
 
 @WebSocketGateway()
-export class ChatGateway {
+export class ChatGateway implements OnGatewayConnection {
   @WebSocketServer() server: Server;
 
   constructor(
     private readonly service: ChatService,
     private readonly sessionService: SessionService,
   ) {}
+
+  async handleConnection(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() { username },
+  ) {
+    const rooms = await this.service.findByUsername(username);
+    this.server.to(client.id).emit('connected', rooms);
+  }
 
   @SubscribeMessage('addRoom')
   async handleAddRoom(
@@ -29,9 +38,14 @@ export class ChatGateway {
     }
     const roomInfo = await this.service.createChat(roomName);
     await this.service.addMember(roomName, username);
-    const { lastActiveAt } = await this.sessionService.update({ username, roomName });
+    const { lastActiveAt } = await this.sessionService.update({
+      username,
+      roomName,
+    });
     client.join(roomName);
-    this.server.to(client.id).emit('joinedRoom', { username, roomInfo, lastActiveAt });
+    this.server
+      .to(client.id)
+      .emit('joinedRoom', { username, roomInfo, lastActiveAt });
   }
 
   @SubscribeMessage('joinRoom')
@@ -46,9 +60,14 @@ export class ChatGateway {
     const roomInfo = await this.service.getRoomInformation(roomName);
     if (!roomInfo.members.includes(username))
       await this.service.addMember(roomName, username);
-    const { lastActiveAt } = await this.sessionService.update({ username, roomName });
+    const { lastActiveAt } = await this.sessionService.update({
+      username,
+      roomName,
+    });
     client.join(roomName);
-    this.server.to(room).emit('joinedRoom', { username, roomInfo, lastActiveAt });
+    this.server
+      .to(room)
+      .emit('joinedRoom', { username, roomInfo, lastActiveAt });
   }
 
   @SubscribeMessage('toRoom')
@@ -65,7 +84,9 @@ export class ChatGateway {
         timestamp,
       });
       await this.sessionService.update({ username, roomName });
-      this.server.to(roomName).emit('toClient', { username, message, timestamp });
+      this.server
+        .to(roomName)
+        .emit('toClient', { username, message, timestamp });
     }
   }
 
