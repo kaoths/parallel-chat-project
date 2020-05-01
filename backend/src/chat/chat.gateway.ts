@@ -7,12 +7,16 @@ import {
 } from '@nestjs/websockets';
 import { Socket, Server } from 'socket.io';
 import { ChatService } from './chat.service';
+import { SessionService } from '../session/session.service';
 
 @WebSocketGateway()
 export class ChatGateway {
   @WebSocketServer() server: Server;
 
-  constructor(private readonly service: ChatService) {}
+  constructor(
+    private readonly service: ChatService,
+    private readonly sessionService: SessionService,
+  ) {}
 
   @SubscribeMessage('addRoom')
   async handleAddRoom(
@@ -25,8 +29,9 @@ export class ChatGateway {
     }
     const roomInfo = await this.service.createChat(roomName);
     await this.service.addMember(roomName, username);
+    const { lastActiveAt } = await this.sessionService.update({ username, roomName });
     client.join(roomName);
-    this.server.to(client.id).emit('joinedRoom', { username, roomInfo });
+    this.server.to(client.id).emit('joinedRoom', { username, roomInfo, lastActiveAt });
   }
 
   @SubscribeMessage('joinRoom')
@@ -41,33 +46,39 @@ export class ChatGateway {
     const roomInfo = await this.service.getRoomInformation(roomName);
     if (!roomInfo.members.includes(username))
       await this.service.addMember(roomName, username);
+    const { lastActiveAt } = await this.sessionService.update({ username, roomName });
     client.join(roomName);
-    this.server.to(room).emit('joinedRoom', { username, roomInfo });
+    this.server.to(room).emit('joinedRoom', { username, roomInfo, lastActiveAt });
   }
 
   @SubscribeMessage('toRoom')
-  async chandleMessageToRoom(
+  async handleMessageToRoom(
     @ConnectedSocket() client: Socket,
     @MessageBody() { username, message },
   ) {
-    const room = this.getClientCurrentRoom(client);
-    if (room) {
+    const roomName = this.getClientCurrentRoom(client);
+    if (roomName) {
       const timestamp = new Date();
-      await this.service.addMessage(room, {
+      await this.service.addMessage(roomName, {
         sender: username,
         message,
         timestamp,
       });
-      this.server.to(room).emit('toClient', { username, message, timestamp });
+      await this.sessionService.update({ username, roomName });
+      this.server.to(roomName).emit('toClient', { username, message, timestamp });
     }
   }
 
   @SubscribeMessage('leaveRoom')
-  handleLeaveRoom(@ConnectedSocket() client: Socket, @MessageBody() username) {
-    const room = this.getClientCurrentRoom(client);
-    if (room) {
-      client.leave(room);
-      this.server.to(room).emit('leftRoom', username);
+  async handleLeaveRoom(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() username,
+  ) {
+    const roomName = this.getClientCurrentRoom(client);
+    if (roomName) {
+      await this.sessionService.update({ username, roomName });
+      client.leave(roomName);
+      this.server.to(roomName).emit('leftRoom', username);
     }
   }
 
@@ -76,11 +87,12 @@ export class ChatGateway {
     @ConnectedSocket() client: Socket,
     @MessageBody() username,
   ) {
-    const room = this.getClientCurrentRoom(client);
-    if (room) {
-      await this.service.removeMember(room, client.id);
-      client.leave(room);
-      this.server.to(room).emit('exitedRoom', username);
+    const roomName = this.getClientCurrentRoom(client);
+    if (roomName) {
+      await this.service.removeMember(roomName, client.id);
+      await this.sessionService.delete({ roomName, username });
+      client.leave(roomName);
+      this.server.to(roomName).emit('exitedRoom', username);
     }
   }
 
