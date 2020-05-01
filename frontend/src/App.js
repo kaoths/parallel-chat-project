@@ -113,16 +113,19 @@ class App extends React.Component {
     });
   }
   login = (res) => {
+    let r = {};
+    res.rooms.forEach(e => {
+      r[e._id] = e
+    });
+    console.log(r);
     this.setState({
       username: res.username,
       token: res.token,
       showUsername: false,
-      isAuth: true
+      isAuth: true,
+      rooms: r
     })
-    res.rooms.forEach(e => {
-      let r = {};
-      r._id = e
-    })
+    
   }
   logout = () => {
     this.resetCurrentRoomName();

@@ -14,7 +14,11 @@ class RoomSelect extends React.Component {
     return (
       <Menu
         className="main-menu"
-        style={{ width: 256 }}
+        style={{ 
+          width: 256,
+          overflowY: 'scroll',
+          paddingBottom: 49
+        }}
         mode="inline"
       >
         {Object.keys(rooms).map((e,i) => (
