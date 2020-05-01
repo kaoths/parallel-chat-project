@@ -49,7 +49,7 @@ class App extends React.Component {
           })
         }
         this.setState({ 
-          currentRoomName: data.roomInfo._id,
+          currentRoomName: data.roomInfo.roomName,
           showCreateRoom: false,
         })
       })
@@ -103,7 +103,9 @@ class App extends React.Component {
     this.setState({
       username: res.username,
       token: res.token,
-      rooms: res.rooms
+      rooms: res.rooms,
+      showUsername: false,
+      isAuth: true
     })
   }
   logout = () => {
@@ -145,7 +147,6 @@ class App extends React.Component {
             onChange={this.changeRoom}
             onCreateClick={() => this.setState({ showCreateRoom: true })}
             isAuth={isAuth}
-            onLogin={this.login}
           />
           <main>
             <div className="messages-wrapper">
@@ -207,6 +208,7 @@ class App extends React.Component {
             url={url}
             socket={socket}
             reset={() => this.resetCurrentRoomName()}
+            onLogin={this.login}
           />
         </div>
       </div>
