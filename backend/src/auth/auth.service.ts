@@ -8,12 +8,14 @@ import { UserService } from '../user/user.service';
 import { User } from '../user/user.model';
 import { compareSync } from 'bcryptjs';
 import { AuthCredentialsDTO } from './auth.dto';
+import { ChatService } from '../chat/chat.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
+    private readonly chatService: ChatService,
   ) {}
 
   async login(credentials: AuthCredentialsDTO): Promise<string> {
@@ -46,8 +48,13 @@ export class AuthService {
     return null;
   }
 
-  sign(user: User): string {
-    return this.jwtService.sign({ userId: user._id });
+  sign(user: User): Promise<any> {
+    return new Promise(async resolve => {
+      const token = await this.jwtService.sign({ userId: user._id });
+      const rooms = await this.chatService.findByUsername(user.username);
+      resolve({ token, rooms });
+    });
+    //return this.jwtService.sign({ userId: user._id });
   }
 
   verify(jwt: string): { userId: string } {

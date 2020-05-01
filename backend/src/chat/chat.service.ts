@@ -14,7 +14,7 @@ export class ChatService {
   }
 
   findByUsername(username: string) {
-    return this.model.findOne({
+    return this.model.find({
       members: {
         $elemMatch: { username },
       },
@@ -26,7 +26,12 @@ export class ChatService {
     return chat.save();
   }
 
-  addMember(roomName: string, name: string) {
+  async addMember(roomName: string, name: string) {
+    const joined = await this.model.findOne({
+      roomName,
+      members: { $elemMatch: { name } },
+    });
+    if (joined) return;
     return this.model.findOneAndUpdate(
       { roomName },
       {

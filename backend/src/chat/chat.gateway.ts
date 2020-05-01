@@ -21,10 +21,10 @@ export class ChatGateway implements OnGatewayConnection {
 
   async handleConnection(
     @ConnectedSocket() client: Socket,
-    @MessageBody() { username },
+    //@MessageBody() { username },
   ) {
-    const rooms = await this.service.findByUsername(username);
-    this.server.to(client.id).emit('connected', rooms);
+    //const rooms = await this.service.findByUsername(username);
+    this.server.to(client.id).emit('connected');
   }
 
   @SubscribeMessage('addRoom')
