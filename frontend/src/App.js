@@ -1,112 +1,157 @@
 import React from 'react';
-import { Button, Menu, Input, Dropdown, Tag } from 'antd';
-import JoinGroup from './components/JoinGroup';
+import { Button, Input } from 'antd';
+import io from "socket.io-client";
+import CreateRoom from './components/CreateRoom';
 import Username from "./components/Username";
-import { SendOutlined, EllipsisOutlined} from '@ant-design/icons';
+import Nav from "./components/Nav";
+import RoomSelect from "./components/RoomSelect";
+import { SendOutlined} from '@ant-design/icons';
+import moment from "moment";
+
+const url = process.env.REACT_APP_API_URL
+const socket = io(url);
 
 class App extends React.Component {
   state = {
-    showJoinGroup: false,
     showUsername: false,
+    showCreateRoom: false,
     messageBox: "",
-    currentChatId: null
+    currentRoomName: null,
+    messages: [],
+    username: "",
+    rooms: [{
+      roomName: "Room Name",
+      _id: "123"
+    },{
+      roomName: "Room 2",
+      _id: "234"
+    }],
+    isAuth: false,
+    token: null
   }
   componentDidMount() {
-    if (!localStorage.getItem('username')) {
-      this.setState({ showUsername: true })
+    if (!localStorage.getItem('token') || !localStorage.getItem('username')) {
+      this.setState({ 
+        showUsername: true,
+      })
+    } else {
+      this.setState({ 
+        username: localStorage.getItem('username'),
+        token: localStorage.getItem('token'),
+        isAuth: true
+      });
+    }
+    if (socket !== null) {
+      socket.on('joinedRoom', (data) => {
+        // Set Room and Recieve Messages
+        this.setState({ 
+          currentRoomName: data.roomInfo._id,
+          messages: data.roomInfo.messages ? data.roomInfo.messages : [],
+          showCreateRoom: false
+        })
+      })
+      socket.on('toClient', (data) => {
+        // Recieve Messages
+        let d = {...data}
+        d.sender = data.username;
+        delete d.username;
+        let m = [...this.state.messages];
+        m.push(d)
+        this.setState({
+          messages: m
+        })
+      })
     }
   }
   sendMessage = (e) => {
     e.preventDefault();
-    const { messageBox } = this.state;
+    const { messageBox, username } = this.state;
     if (messageBox && messageBox !== "") {
-      // Send Message Here
-      console.log(messageBox);
+      // Send Message
+      socket.emit('toRoom',{
+        username,
+        message: messageBox
+      })
       this.setState({ messageBox: ""});
     }
   }
-  leaveCurrentGroup = () => {
-    // Leave Group
+  changeRoom = (roomName) => {
+    console.log(roomName);
+    // this.leaveCurrentRoom();
+    // socket.emit('joinRoom', {
+    //   username: this.state.username,
+    //   roomName
+    // });
+  }
+  leaveCurrentRoom = () => {
+    // Leave Room
+    socket.emit('leaveRoom', this.state.username);
+    this.setState({ 
+      currentRoomName: null,
+      messages: [] 
+    });
+  }
+  resetCurrentRoomName = () => {
+    this.setState({ 
+      currentRoomName: null,
+      messages: [] 
+    });
+  }
+  logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    this.resetCurrentRoomName();
+    this.setState({
+      username: "",
+      token: null,
+      isAuth: false,
+      showUsername: true
+    })
+  }
+  componentWillUnmount = () => {
+    // Temporarily Exit Room
+    const { username } = this.state;
+    socket.emit('exitRoom', username)
   }
   render() {
-    const { showUsername, showJoinGroup, messageBox } = this.state;
+    const { showUsername, 
+      showCreateRoom,
+      messageBox, 
+      username, 
+      messages, 
+      rooms,
+      currentRoomName,
+      isAuth
+    } = this.state;
     return (
       <div>
-        <nav className="main">
-          <div className="content">
-            <h4 className="mb-0">Miniproject ภาคปลาย 2562: Simple LINE-like app (15%)</h4>
-            <Button 
-              onClick={() => this.setState({ showUsername: true })}
-              style={{ position: 'absolute', right: 8 }}
-            >
-              Change Username
-            </Button>
-          </div>
-        </nav>
+        <Nav 
+          isAuth={isAuth} 
+          logout={() => this.logout()} 
+          onButtonClick={() => this.setState({ showUsername: true })}
+        />
         <div style={{ paddingTop: '48px' }}>
-          <Menu
-            className="main-menu"
-            style={{ width: 256 }}
-            mode="inline"
-          >
-            <Menu.Item 
-              key="1" 
-              className="ma-0 d-flex justify-space-between align-center"
-              onClick={() => this.setState({ currentChatId: 1 })}
-            >
-              <div className="d-flex align-center">
-                <span>Group 1</span>
-                <Tag color="#f5222d" className="ml-2 rounded-max">10</Tag>
-              </div>
-              <Dropdown placement="bottomRight" overlay={() => (
-                <Menu style={{ marginTop: -8 }}>
-                  <Menu.Item 
-                    className="t-color-error"
-                    onClick={() => this.leaveCurrentGroup()}
-                  >Leave Group</Menu.Item>
-                </Menu>
-              )} trigger={['click']}>
-                <Button type="link" className="pa-0">
-                  <EllipsisOutlined />
-                </Button>
-              </Dropdown>
-            </Menu.Item>
-            <div 
-              className="bottom-bar full-width pa-2"
-              style={{ 
-                width: 256,
-                borderRight: '1px solid #f0f0f0',
-                left: 0
-              }}
-            >
-              <Button 
-                type="primary" 
-                onClick={() => this.setState({ showJoinGroup: true })}
-                className="full-width"
-                style={{ boxSizing: 'border-box' }}
-              >
-                Join a Group
-              </Button>
-            </div>
-          </Menu>
+          <RoomSelect
+            rooms={rooms}
+            leaveRoom={() => this.leaveCurrentRoom()}
+            onChange={this.changeRoom}
+            onCreateClick={() => this.setState({ showCreateRoom: true })}
+            isAuth={isAuth}
+          />
           <main>
-            <div className="pa-2">
-              <div className="speech-bubble-wrapper theirs">
-                <div className="speech-name">Someone</div>
-                <div className="speech-bubble theirs">
-                  Hello
-                </div>
-              </div>
-              <div className="speech-bubble-wrapper mine">
-                <div className="speech-name">Me</div>
-                <div className="speech-bubble mine">
-                  Hello there!
-                </div>
-              </div>
-              <div className="speech-bubble-wrapper mine">
-                <div className="speech-bubble mine">
-                  Lorem ipsum dolor sit amet
-                </div>
+            <div className="messages-wrapper">
+              <div className="pa-2">
+                { messages.map((e,i) => (
+                  <div 
+                    className={`speech-bubble-wrapper ${e.sender === username ? 'mine' : 'theirs'}`}
+                    key={i + e.timestamp}
+                  >
+                    <div className="speech-name">{e.sender}, {moment(e.timestamp).format("HH:MM DD/MM/YYYY")}</div>
+                    <div className={`speech-bubble ${e.sender === username ? 'mine' : 'theirs'}`}>
+                      {e.message}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
             <div 
@@ -126,21 +171,27 @@ class App extends React.Component {
                     value={messageBox}
                     className="mr-2"
                     onChange={(e) => this.setState({ messageBox: e.target.value })}
+                    disabled={!currentRoomName}
                   />
-                  <Button type="primary" htmlType="submit">
+                  <Button type="primary" htmlType="submit" disabled={!currentRoomName}>
                     <SendOutlined />
                   </Button>
                 </div>
               </form>
             </div>
           </main>
-          <JoinGroup
-            visible={showJoinGroup}
-            onCancel={() => this.setState({ showJoinGroup: false })}
+          <CreateRoom
+            visible={showCreateRoom}
+            onCancel={() => this.setState({ showCreateRoom: false })}
+            url={url}
+            socket={socket}
           />
           <Username
             visible={showUsername}
             onCancel={() => this.setState({ showUsername: false })}
+            url={url}
+            socket={socket}
+            reset={() => this.resetCurrentRoomName()}
           />
         </div>
       </div>
