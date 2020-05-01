@@ -20,9 +20,13 @@ export class SessionService {
   }
 
   update(sessionDTO) {
-    return this.model.findOneAndUpdate(sessionDTO, {
-      lastActiveAt: new Date(),
-    }, { new: true });
+    return this.model.findOneAndUpdate(
+      sessionDTO,
+      {
+        lastActiveAt: new Date(),
+      },
+      { new: true },
+    );
   }
 
   delete(conditions) {

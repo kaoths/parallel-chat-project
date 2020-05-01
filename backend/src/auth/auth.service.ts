@@ -48,13 +48,10 @@ export class AuthService {
     return null;
   }
 
-  sign(user: User): Promise<any> {
-    return new Promise(async resolve => {
-      const token = await this.jwtService.sign({ userId: user._id });
-      const rooms = await this.chatService.findByUsername(user.username);
-      resolve({ token, rooms });
-    });
-    //return this.jwtService.sign({ userId: user._id });
+  async sign(user: User): Promise<any> {
+    const token = await this.jwtService.sign({ userId: user._id });
+    const rooms = await this.chatService.findByUsername(user.username);
+    return { token, rooms };
   }
 
   verify(jwt: string): { userId: string } {
