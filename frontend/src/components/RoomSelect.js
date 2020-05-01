@@ -1,5 +1,5 @@
 import React from "react"
-import { Menu, Button, Dropdown, Tag } from "antd"
+import { Menu, Button, Dropdown } from "antd"
 import { EllipsisOutlined } from '@ant-design/icons';
 
 class RoomSelect extends React.Component {
@@ -20,10 +20,7 @@ class RoomSelect extends React.Component {
             className="ma-0 d-flex justify-space-between align-center"
             onClick={() => this.handleChange(e)}
           >
-            <div className="d-flex align-center">
-              <span>{e.roomName}</span>
-              <Tag color="#f5222d" className="ml-2 rounded-max">10</Tag>
-            </div>
+            <span>{e.roomName}</span>
             <Dropdown placement="bottomRight" overlay={() => (
               <Menu style={{ marginTop: -8 }}>
                 <Menu.Item 

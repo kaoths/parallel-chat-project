@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Input } from 'antd';
+import { Button, Input, Tag } from 'antd';
 import io from "socket.io-client";
 import CreateRoom from './components/CreateRoom';
 import Username from "./components/Username";
@@ -27,7 +27,8 @@ class App extends React.Component {
       _id: "234"
     }],
     isAuth: false,
-    token: null
+    token: null,
+    roomLastActive: null
   }
   componentDidMount() {
     if (!localStorage.getItem('token') || !localStorage.getItem('username')) {
@@ -44,10 +45,30 @@ class App extends React.Component {
     if (socket !== null) {
       socket.on('joinedRoom', (data) => {
         // Set Room and Recieve Messages
+        console.log(data);
+        if (data.roomInfo.messages) {
+          const messages = data.roomInfo.messages;
+          const lastMessageTime = Date.parse(messages[messages.length-1].timestamp)
+          let mesWithBanner = [];
+          if (Date.parse(data.lastActiveAt) < lastMessageTime) {
+            mesWithBanner = [{
+              type: 'banner',
+              content: 'Unread Messages Below',
+              timestamp: data.lastActiveAt
+            },...data.roomInfo.messages];
+            mesWithBanner = mesWithBanner.sort((a,b) => {
+              return a.timestamp.localeCompare(b.timestamp)
+            });
+          } else {
+            mesWithBanner = messages;
+          }
+          this.setState({ 
+            messages: mesWithBanner,
+          })
+        }
         this.setState({ 
           currentRoomName: data.roomInfo._id,
-          messages: data.roomInfo.messages ? data.roomInfo.messages : [],
-          showCreateRoom: false
+          showCreateRoom: false,
         })
       })
       socket.on('toClient', (data) => {
@@ -142,15 +163,21 @@ class App extends React.Component {
             <div className="messages-wrapper">
               <div className="pa-2">
                 { messages.map((e,i) => (
-                  <div 
-                    className={`speech-bubble-wrapper ${e.sender === username ? 'mine' : 'theirs'}`}
-                    key={i + e.timestamp}
-                  >
-                    <div className="speech-name">{e.sender}, {moment(e.timestamp).format("HH:MM DD/MM/YYYY")}</div>
-                    <div className={`speech-bubble ${e.sender === username ? 'mine' : 'theirs'}`}>
-                      {e.message}
+                  e.type === 'banner' ? (
+                    <div className="full-width pt-3 pb-3" style={{ textAlign: 'center' }} key={i + e.timestamp}>
+                      <Tag color="#dcdcdc" style={{ color: '#262626' }}>{e.content}</Tag>
                     </div>
-                  </div>
+                  ) : (
+                    <div 
+                      className={`speech-bubble-wrapper ${e.sender === username ? 'mine' : 'theirs'}`}
+                      key={i + e.timestamp}
+                    >
+                      <div className="speech-name">{e.sender}, {moment(e.timestamp).format("HH:MM DD/MM/YYYY")}</div>
+                      <div className={`speech-bubble ${e.sender === username ? 'mine' : 'theirs'}`}>
+                        {e.message}
+                      </div>
+                    </div>
+                  )
                 ))}
               </div>
             </div>
