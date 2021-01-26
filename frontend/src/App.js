@@ -1,112 +1,192 @@
 import React from 'react';
-import { Button, Menu, Input, Dropdown, Tag } from 'antd';
-import JoinGroup from './components/JoinGroup';
+import { Button, Input, Tag } from 'antd';
+import io from "socket.io-client";
+import CreateRoom from './components/CreateRoom';
 import Username from "./components/Username";
-import { SendOutlined, EllipsisOutlined} from '@ant-design/icons';
+import Nav from "./components/Nav";
+import RoomSelect from "./components/RoomSelect";
+import { SendOutlined} from '@ant-design/icons';
+import moment from "moment";
+
+const url = process.env.REACT_APP_API_URL
+const socket = io(url);
 
 class App extends React.Component {
   state = {
-    showJoinGroup: false,
-    showUsername: false,
+    showUsername: true,
+    showCreateRoom: false,
     messageBox: "",
-    currentChatId: null
+    currentRoomName: null,
+    messages: [],
+    username: "",
+    rooms: {},
+    isAuth: false,
+    token: null,
   }
   componentDidMount() {
-    if (!localStorage.getItem('username')) {
-      this.setState({ showUsername: true })
+    if (socket !== null) {
+      socket.on('joinedRoom', (data) => {
+        // Set Room and Recieve Messages
+        if (data.roomInfo.messages) {
+          const messages = data.roomInfo.messages;
+          if (messages.length > 0) {
+            const lastMessageTime = Date.parse(messages[messages.length-1].timestamp)
+            let mesWithBanner = [];
+            if (Date.parse(data.lastActiveAt) < lastMessageTime) {
+              mesWithBanner = [{
+                type: 'banner',
+                content: 'Unread Messages Below',
+                timestamp: data.lastActiveAt
+              },...data.roomInfo.messages];
+              mesWithBanner = mesWithBanner.sort((a,b) => {
+                return a.timestamp.localeCompare(b.timestamp)
+              });
+            } else {
+              mesWithBanner = messages;
+            }
+            this.setState({ 
+              messages: mesWithBanner,
+            })
+          } else {
+            this.setState({ 
+              messages,
+            })
+          }
+        }
+        this.setState({ 
+          currentRoomName: data,
+          showCreateRoom: false,
+        })
+        // Change room
+        let r = this.state.rooms
+        r[data.roomInfo._id] = data.roomInfo;
+        this.setState({ rooms: r })
+      })
+      socket.on('toClient', (data) => {
+        // Recieve Messages
+        let d = {...data}
+        d.sender = data.username;
+        delete d.username;
+        let m = [...this.state.messages];
+        m.push(d)
+        this.setState({
+          messages: m
+        })
+      })
     }
   }
   sendMessage = (e) => {
     e.preventDefault();
-    const { messageBox } = this.state;
+    const { messageBox, username } = this.state;
     if (messageBox && messageBox !== "") {
-      // Send Message Here
-      console.log(messageBox);
+      // Send Message
+      socket.emit('toRoom',{
+        username,
+        message: messageBox
+      })
       this.setState({ messageBox: ""});
     }
   }
-  leaveCurrentGroup = () => {
-    // Leave Group
+  changeRoom = (room) => {
+    if (room) {
+      socket.emit('joinRoom', {
+        username: this.state.username,
+        roomName: room.roomName
+      });
+    }
+  }
+  exitCurrentRoom = (room) => {
+    // Leave Room
+    const r = this.state.rooms;
+    delete r[room._id]
+    socket.emit('exitRoom', this.state.username);
+    this.setState({ 
+      currentRoomName: null,
+      messages: [] 
+    });
+  }
+  resetCurrentRoomName = () => {
+    this.setState({ 
+      currentRoomName: null,
+      messages: [] 
+    });
+  }
+  login = (res) => {
+    let r = {};
+    res.rooms.forEach(e => {
+      r[e._id] = e
+    });
+    this.setState({
+      username: res.username,
+      token: res.token,
+      showUsername: false,
+      isAuth: true,
+      rooms: r
+    })
+    
+  }
+  logout = (username) => {
+    this.resetCurrentRoomName();
+    socket.emit('leaveRoom', username);
+    this.setState({
+      username: "",
+      token: null,
+      isAuth: false,
+      showUsername: true,
+      rooms: {}
+    })
+  }
+  componentWillUnmount = () => {
+    // Temporarily Exit Room
+    const { username } = this.state;
+    socket.emit('leaveRoom', username);
+    this.logout(username);
   }
   render() {
-    const { showUsername, showJoinGroup, messageBox } = this.state;
+    const { showUsername, 
+      showCreateRoom,
+      messageBox, 
+      username, 
+      messages, 
+      rooms,
+      currentRoomName,
+      isAuth
+    } = this.state;
     return (
       <div>
-        <nav className="main">
-          <div className="content">
-            <h4 className="mb-0">Miniproject ภาคปลาย 2562: Simple LINE-like app (15%)</h4>
-            <Button 
-              onClick={() => this.setState({ showUsername: true })}
-              style={{ position: 'absolute', right: 8 }}
-            >
-              Change Username
-            </Button>
-          </div>
-        </nav>
+        <Nav 
+          isAuth={isAuth} 
+          logout={() => this.logout(username)} 
+          onButtonClick={() => this.setState({ showUsername: true })}
+        />
         <div style={{ paddingTop: '48px' }}>
-          <Menu
-            className="main-menu"
-            style={{ width: 256 }}
-            mode="inline"
-          >
-            <Menu.Item 
-              key="1" 
-              className="ma-0 d-flex justify-space-between align-center"
-              onClick={() => this.setState({ currentChatId: 1 })}
-            >
-              <div className="d-flex align-center">
-                <span>Group 1</span>
-                <Tag color="#f5222d" className="ml-2 rounded-max">10</Tag>
-              </div>
-              <Dropdown placement="bottomRight" overlay={() => (
-                <Menu style={{ marginTop: -8 }}>
-                  <Menu.Item 
-                    className="t-color-error"
-                    onClick={() => this.leaveCurrentGroup()}
-                  >Leave Group</Menu.Item>
-                </Menu>
-              )} trigger={['click']}>
-                <Button type="link" className="pa-0">
-                  <EllipsisOutlined />
-                </Button>
-              </Dropdown>
-            </Menu.Item>
-            <div 
-              className="bottom-bar full-width pa-2"
-              style={{ 
-                width: 256,
-                borderRight: '1px solid #f0f0f0',
-                left: 0
-              }}
-            >
-              <Button 
-                type="primary" 
-                onClick={() => this.setState({ showJoinGroup: true })}
-                className="full-width"
-                style={{ boxSizing: 'border-box' }}
-              >
-                Join a Group
-              </Button>
-            </div>
-          </Menu>
+          <RoomSelect
+            rooms={rooms}
+            exitRoom={this.exitCurrentRoom}
+            onChange={this.changeRoom}
+            onCreateClick={() => this.setState({ showCreateRoom: true })}
+            isAuth={isAuth}
+          />
           <main>
-            <div className="pa-2">
-              <div className="speech-bubble-wrapper theirs">
-                <div className="speech-name">Someone</div>
-                <div className="speech-bubble theirs">
-                  Hello
-                </div>
-              </div>
-              <div className="speech-bubble-wrapper mine">
-                <div className="speech-name">Me</div>
-                <div className="speech-bubble mine">
-                  Hello there!
-                </div>
-              </div>
-              <div className="speech-bubble-wrapper mine">
-                <div className="speech-bubble mine">
-                  Lorem ipsum dolor sit amet
-                </div>
+            <div className="messages-wrapper">
+              <div className="pa-2">
+                { messages.map((e,i) => (
+                  e.type === 'banner' ? (
+                    <div className="full-width pt-3 pb-3" style={{ textAlign: 'center' }} key={i + e.timestamp}>
+                      <Tag color="#dcdcdc" style={{ color: '#262626' }}>{e.content}</Tag>
+                    </div>
+                  ) : (
+                    <div 
+                      className={`speech-bubble-wrapper ${e.sender === username ? 'mine' : 'theirs'}`}
+                      key={i + e.timestamp}
+                    >
+                      <div className="speech-name">{e.sender}, {moment(e.timestamp).format("HH:MM DD/MM/YYYY")}</div>
+                      <div className={`speech-bubble ${e.sender === username ? 'mine' : 'theirs'}`}>
+                        {e.message}
+                      </div>
+                    </div>
+                  )
+                ))}
               </div>
             </div>
             <div 
@@ -126,21 +206,29 @@ class App extends React.Component {
                     value={messageBox}
                     className="mr-2"
                     onChange={(e) => this.setState({ messageBox: e.target.value })}
+                    disabled={!currentRoomName}
                   />
-                  <Button type="primary" htmlType="submit">
+                  <Button type="primary" htmlType="submit" disabled={!currentRoomName}>
                     <SendOutlined />
                   </Button>
                 </div>
               </form>
             </div>
           </main>
-          <JoinGroup
-            visible={showJoinGroup}
-            onCancel={() => this.setState({ showJoinGroup: false })}
+          <CreateRoom
+            visible={showCreateRoom}
+            onCancel={() => this.setState({ showCreateRoom: false })}
+            url={url}
+            socket={socket}
+            username={username}
           />
           <Username
             visible={showUsername}
             onCancel={() => this.setState({ showUsername: false })}
+            url={url}
+            socket={socket}
+            reset={() => this.resetCurrentRoomName()}
+            onLogin={this.login}
           />
         </div>
       </div>

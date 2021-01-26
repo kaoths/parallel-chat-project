@@ -52,6 +52,11 @@ main {
     padding-left: 256px;
 }
 
+.messages-wrapper {
+    max-height: calc(100vh - 48px);
+    padding-bottom: 49px;
+    overflow-y: scroll;
+}
 .speech-bubble-wrapper {
     align-items: center;
     display: flex;
@@ -104,7 +109,7 @@ main {
         border-right-color: @primary-color;
         border-top: 0;
         border-left: 0;
-        right: 24px;
+        right: 8px;
     }
 }
 .speech-bubble.theirs {
@@ -114,6 +119,7 @@ main {
         border-top-color: @gray-4;
         border-bottom: 0;
         border-left: 0;
-        left: 24px
+        right: 100%;
+        transform: translate(16px);
     }
 }

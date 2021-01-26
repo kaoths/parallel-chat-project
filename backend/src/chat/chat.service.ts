@@ -13,17 +13,29 @@ export class ChatService {
     return this.model.findOne({ roomName });
   }
 
+  findByUsername(username: string) {
+    return this.model.find({
+      members: username,
+    });
+  }
+
   createChat(roomName: string) {
     const chat = new this.model({ roomName });
     return chat.save();
   }
 
-  addMember(roomName: string, name: string) {
+  async addMember(roomName: string, name: string) {
+    const joined = await this.model.findOne({
+      roomName,
+      members: name,
+    });
+    if (joined) return;
     return this.model.findOneAndUpdate(
       { roomName },
       {
         $push: { members: name },
       },
+      { new: true },
     );
   }
 
@@ -33,6 +45,7 @@ export class ChatService {
       {
         $push: { messages: message },
       },
+      { new: true },
     );
   }
 
@@ -42,11 +55,11 @@ export class ChatService {
       {
         $pull: { members: name },
       },
+      { new: true },
     );
   }
 
   getRoomInformation(roomName: string) {
-    return this.model.findOne({ roomName })
+    return this.model.findOne({ roomName });
   }
-
 }

@@ -6,6 +6,9 @@ export class Message {
 
   @prop({ required: true })
   message: string;
+
+  @prop({ required: true })
+  timestamp: Date;
 }
 
 export class Chat {
